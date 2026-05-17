@@ -1,0 +1,16 @@
+.site-walker-wp-settings .tab-panel {
+	margin-top: 20px;
+	padding: 20px;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.site-walker-wp-settings .form-table th {
+	width: 220px;
+}
+
+.site-walker-wp-settings .wp-picker-container {
+	display: inline-block;
+	vertical-align: top;
+}
