@@ -3,7 +3,7 @@
  * Plugin Name:       Site Walker
  * Plugin URI:        https://site-walker.net/
  * Description:       Front-end chat widget powered by a Site Walker API instance.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Headwall Hosting
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || die();
 define( __NAMESPACE__ . '\\PLUGIN_FILE', __FILE__ );
 define( __NAMESPACE__ . '\\PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( __NAMESPACE__ . '\\PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( __NAMESPACE__ . '\\PLUGIN_VERSION', '0.1.0' );
+define( __NAMESPACE__ . '\\PLUGIN_VERSION', '0.2.0' );
 
 require_once PLUGIN_DIR . 'constants.php';
 require_once PLUGIN_DIR . 'functions-private.php';

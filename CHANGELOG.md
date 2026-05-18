@@ -7,8 +7,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Pending
-- Browser end-to-end test against a CORS-enabled API instance (currently blocked upstream).
-- Reverse proxy setup so the WP host and API share an origin.
+- Admin-side "test connection" button that pings the configured API URL from the browser.
+- Conversation reset affordance (clear `localStorage`, mint fresh session).
+
+## [0.2.0] - 2026-05-18
+
+End-to-end browser flow verified against a live Site Walker API instance.
+
+### Changed
+- Reachability probe now calls `GET /sessions/can-start` (the API's documented pre-flight endpoint) and treats only `200 { "ok": true }` as available. Previously hit `GET /`, which the API no longer exposes as a probe.
+
+### Fixed
+- Browser end-to-end flow (probe → mint → chat) now works against the upstream API now that the proper pre-flight endpoint is in use and CORS is honoured.
 
 ## [0.1.0] - 2026-05-17
 

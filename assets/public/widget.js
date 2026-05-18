@@ -114,14 +114,14 @@
 		}
 
 		async probeApi() {
-			let ok = false;
 			try {
-				const res = await fetch(`${config.apiUrl}/`, { method: 'GET', mode: 'cors' });
-				ok = res.status === 200;
+				const res = await fetch(`${config.apiUrl}/sessions/can-start`, { method: 'GET', mode: 'cors' });
+				if (res.status !== 200) return false;
+				const body = await res.json().catch(() => null);
+				return body && body.ok === true;
 			} catch (e) {
-				ok = false;
+				return false;
 			}
-			return ok;
 		}
 
 		show() {

@@ -1,9 +1,9 @@
 # Project Tracker
 
-**Version:** 0.1.0
-**Last Updated:** 2026-05-17
-**Current Phase:** M0 — Scaffold & happy-path widget
-**Overall Progress:** ~25% of "v1 shippable"
+**Version:** 0.2.0
+**Last Updated:** 2026-05-18
+**Current Phase:** M2 — Abuse-resistance pass (next)
+**Overall Progress:** ~40% of "v1 shippable"
 
 ---
 
@@ -18,13 +18,16 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 ## Active TODO Items
 
 ### In progress
-- [ ] **Unblock browser end-to-end test.** Local API server returns no CORS headers, so the browser-side probe + mint + chat all fail at fetch level. Two paths under consideration:
-  - (a) wait for CORS middleware to land upstream in the site-walker server, or
-  - (b) stand up a reverse proxy so the WP host and the API share an origin. **User picked (b) as the next step.**
+- _(nothing in flight — 0.2.0 just shipped)_
 
 ### Next
-- [ ] Verify the three-state load flow end-to-end in a real browser once the proxy is in place: probe-needed → cached-available → session-in-progress.
 - [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget).
+- [ ] Conversation reset affordance (clear `localStorage`, mint fresh session).
+
+### Done (this release)
+- [x] **Unblock browser end-to-end test.** Resolved upstream: API ships CORS middleware and a proper pre-flight endpoint (`GET /sessions/can-start`). Reverse proxy not needed.
+- [x] Verify the three-state load flow end-to-end in a real browser: probe-needed → cached-available → session-in-progress. Confirmed against the live API on 2026-05-18.
+- [x] Switch probe from `GET /` to `GET /sessions/can-start`; treat `200 { "ok": true }` as the only success signal.
 
 ### Later (deferred to dedicated milestones)
 - [ ] API key support (header injection on every request; admin field; key revocation flow).
@@ -36,15 +39,15 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 
 ## Milestones
 
-### M0 — Scaffold & happy-path widget ✅ (this commit)
+### M0 — Scaffold & happy-path widget ✅
 - Plugin loads without errors, options register with defaults.
 - Settings page renders both tabs, saves, sanitises.
 - Front-end container, JS, and CSS enqueue and render correctly.
 - API config is shipped to JS as typed JSON (not stringified via `wp_localize_script`).
 
-### M1 — Verified browser flow ⏳
-- Reverse proxy or upstream CORS in place.
-- Manual test pass: probe success path, probe failure cooldown path, session rehydrate path, session expiry path.
+### M1 — Verified browser flow ✅ (0.2.0)
+- Upstream API now ships CORS middleware and the `GET /sessions/can-start` pre-flight endpoint.
+- Manual test pass against the live API: probe success path confirmed (`{"state":"available"}` cached to `localStorage`); session mint, send-turn and rehydrate paths exercised in the browser.
 
 ### M2 — Abuse-resistance pass
 - Rate limiting (client-side cool-downs + server-side allowance).

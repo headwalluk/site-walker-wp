@@ -2,7 +2,7 @@
 
 A floating front-end chat widget for WordPress, talking directly to a [Site Walker](https://site-walker.net) API instance from the visitor's browser.
 
-**Status:** 0.1.0 — pre-alpha.
+**Status:** 0.2.0 — pre-alpha.
 
 ## Install
 
@@ -16,7 +16,7 @@ The widget JS gates network calls via `localStorage`, keyed per API host:
 
 1. **Session in progress** → render launcher; rehydrate history via `GET /messages` on open.
 2. **API known reachable** (cached probe within 24h) → render launcher; mint a session on click.
-3. **No recent probe** → `GET <apiUrl>/`. On 200, render the launcher. On failure, hide and don't re-probe for 1h.
+3. **No recent probe** → `GET <apiUrl>/sessions/can-start`. On `{ "ok": true }`, render the launcher. On any other response, hide and don't re-probe for 1h.
 
 ## Requires
 
