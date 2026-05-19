@@ -4,7 +4,7 @@ Tags: chat, chatbot, ai, llm, widget
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,14 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 
 == Changelog ==
 
+= 0.3.0 =
+* Changed: text domain renamed from `site-walker-wp` to `site-walker`; `@package` renamed to `Site_Walker`.
+* Changed: global-scope identifiers now use the `STWLK_` / `stwlk_` prefix; main entry file no longer declares a namespace.
+* Added: light markdown formatting in assistant replies — bold (`**…**`), inline code (`` `…` ``), and same-origin URL auto-linking. External URLs are deliberately not linkified.
+* Fixed: settings page template was in a non-existent `Site_Walker_WP` namespace, breaking constant lookups for `SETTINGS_GROUP` / `ADMIN_PAGE_SLUG`.
+* Fixed: classes under the `Site_Walker` namespace referenced bare `PLUGIN_DIR`/`PLUGIN_URL`/`PLUGIN_VERSION` constants that no longer existed; switched to global `\STWLK_PLUGIN_*` references.
+* Fixed: plugin bootstrap (`stwlk_plugin_run()`) is now invoked.
+
 = 0.2.0 =
 * Changed: reachability probe now calls `GET /sessions/can-start` and treats `200 { "ok": true }` as available, matching the API's documented pre-flight endpoint.
 * Fixed: end-to-end browser flow (probe → mint → chat) works against the upstream API.
@@ -55,6 +63,9 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * Initial scaffold: settings page, front-end widget, three-state load flow (cached session → cached probe → fresh probe), session mint and chat turn handling.
 
 == Upgrade Notice ==
+
+= 0.3.0 =
+Text domain renamed to `site-walker` and global-scope prefix standardised on `STWLK_` / `stwlk_`. Bootstrap is now actually invoked (the 0.2.0 release shipped a no-op entry point). No DB changes; option keys unchanged.
 
 = 0.2.0 =
 Probe endpoint changed to `/sessions/can-start`. Requires a Site Walker API instance that exposes the new endpoint.

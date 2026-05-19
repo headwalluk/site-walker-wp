@@ -2,18 +2,19 @@
 /**
  * Plugin constants.
  *
- * @package Site_Walker_WP
+ * @package Site_Walker
  */
 
-namespace Site_Walker_WP;
+namespace Site_Walker;
 
 defined( 'ABSPATH' ) || die();
 
-const TEXT_DOMAIN = 'site-walker-wp';
+// Removed : Text domain is a rare instance where an inline magic string is what we need
+// const TEXT_DOMAIN = 'site-walker-wp';
 
-const ADMIN_PAGE_SLUG = 'site-walker-wp';
+const ADMIN_PAGE_SLUG  = 'site-walker-wp';
 const ADMIN_CAPABILITY = 'manage_options';
-const SETTINGS_GROUP = 'site_walker_wp_options';
+const SETTINGS_GROUP   = 'site_walker_wp_options';
 
 // wp_options keys (OPT_ prefix).
 const OPT_API_URL          = 'site_walker_wp_api_url';

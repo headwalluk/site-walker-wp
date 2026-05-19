@@ -1,7 +1,7 @@
 # Project Tracker
 
-**Version:** 0.2.0
-**Last Updated:** 2026-05-18
+**Version:** 0.3.0
+**Last Updated:** 2026-05-19
 **Current Phase:** M2 — Abuse-resistance pass (next)
 **Overall Progress:** ~40% of "v1 shippable"
 
@@ -18,7 +18,7 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 ## Active TODO Items
 
 ### In progress
-- _(nothing in flight — 0.2.0 just shipped)_
+- _(nothing in flight — 0.3.0 just shipped)_
 
 ### Next
 - [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget).
@@ -34,6 +34,10 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 - [ ] Abuse / rate-limit hardening: per-IP throttling on `POST /sessions`, simple bot detection (timing + honeypot), token-spend ceiling per visitor.
 - [ ] Conversation reset affordance (clear `localStorage`, mint fresh session).
 - [ ] Theme override hook for `templates/` once we have any front-end PHP templates worth exposing.
+- [ ] **Integrations framework** — see [`10-integrations-architecture.md`](10-integrations-architecture.md).
+- [ ] **WooCommerce integration** — see [`11-integration-woocommerce.md`](11-integration-woocommerce.md).
+- [ ] **Independent Analytics integration** — see [`12-integration-independent-analytics.md`](12-integration-independent-analytics.md).
+- [ ] **System context blocks: admin CRUD + sync** — see [`20-system-blocks-api.md`](20-system-blocks-api.md). Upstream API routes need to be designed and built first.
 
 ---
 
@@ -58,6 +62,16 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 - Mobile layout review.
 - A11y review (focus trap when panel open, ESC to close, screen reader checks).
 - Theme override docs.
+
+### M4 — Integrations & curated context (planning only)
+The pivot from "generic chat widget" to "WordPress/WooCommerce-aware assistant". Planning docs landed 2026-05-19; nothing built yet.
+- Integrations framework (per-plugin bridges; see [`10-integrations-architecture.md`](10-integrations-architecture.md)).
+- WooCommerce integration ([`11-integration-woocommerce.md`](11-integration-woocommerce.md)).
+- Independent Analytics integration ([`12-integration-independent-analytics.md`](12-integration-independent-analytics.md)).
+- Admin CRUD for system context blocks + sync to upstream API ([`20-system-blocks-api.md`](20-system-blocks-api.md)). New upstream routes required.
+
+### M5 — Operator controls (planning only)
+The knobs a merchant actually needs before they'll trust this in production. Planning landed 2026-05-19; nothing built yet. See [`30-operator-controls.md`](30-operator-controls.md) for the full brainstorm and the recommended v1 cut (budget caps, schedule, country gating, per-language welcome text, hide-on-checkout, consent gate, budget-threshold email).
 
 ---
 

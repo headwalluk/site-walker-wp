@@ -2,10 +2,10 @@
 /**
  * Admin menu registration and asset loading.
  *
- * @package Site_Walker_WP
+ * @package Site_Walker
  */
 
-namespace Site_Walker_WP;
+namespace Site_Walker;
 
 defined( 'ABSPATH' ) || die();
 
@@ -21,8 +21,8 @@ class Admin_Hooks {
 	 */
 	public function register_menu(): void {
 		$this->hook_suffix = (string) add_menu_page(
-			__( 'Site Walker', 'site-walker-wp' ),
-			__( 'Site Walker', 'site-walker-wp' ),
+			__( 'Site Walker', 'site-walker' ),
+			__( 'Site Walker', 'site-walker' ),
 			ADMIN_CAPABILITY,
 			ADMIN_PAGE_SLUG,
 			array( $this, 'render_settings_page' ),
@@ -36,10 +36,10 @@ class Admin_Hooks {
 	 */
 	public function render_settings_page(): void {
 		if ( ! current_user_can( ADMIN_CAPABILITY ) ) {
-			wp_die( esc_html__( 'Insufficient permissions.', 'site-walker-wp' ) );
+			wp_die( esc_html__( 'Insufficient permissions.', 'site-walker' ) );
 		}
 
-		require PLUGIN_DIR . 'admin-templates/settings-page.php';
+		require \STWLK_PLUGIN_DIR . 'admin-templates/settings-page.php';
 	}
 
 	/**
@@ -52,19 +52,8 @@ class Admin_Hooks {
 
 		wp_enqueue_style( 'wp-color-picker' );
 
-		wp_enqueue_style(
-			'site-walker-wp-admin',
-			PLUGIN_URL . 'assets/admin/admin.css',
-			array(),
-			PLUGIN_VERSION
-		);
+		wp_enqueue_style( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.css', array(), \STWLK_PLUGIN_VERSION );
 
-		wp_enqueue_script(
-			'site-walker-wp-admin',
-			PLUGIN_URL . 'assets/admin/admin.js',
-			array( 'wp-color-picker' ),
-			PLUGIN_VERSION,
-			true
-		);
+		wp_enqueue_script( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.js', array( 'wp-color-picker' ), \STWLK_PLUGIN_VERSION, true );
 	}
 }

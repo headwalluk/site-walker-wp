@@ -2,16 +2,16 @@
 /**
  * Tabbed settings page for Site Walker.
  *
- * @package Site_Walker_WP
+ * @package Site_Walker
  */
 
-namespace Site_Walker_WP;
+namespace Site_Walker;
 
 defined( 'ABSPATH' ) || die();
 
 $tabs = array(
-	'general'    => __( 'General', 'site-walker-wp' ),
-	'appearance' => __( 'Appearance', 'site-walker-wp' ),
+	'general'    => __( 'General', 'site-walker' ),
+	'appearance' => __( 'Appearance', 'site-walker' ),
 );
 
 $nav_html = '';

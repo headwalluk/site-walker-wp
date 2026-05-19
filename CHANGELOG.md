@@ -10,6 +10,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Admin-side "test connection" button that pings the configured API URL from the browser.
 - Conversation reset affordance (clear `localStorage`, mint fresh session).
 
+## [0.3.0] - 2026-05-19
+
+Refactor pass to align the codebase with the project's house style, plus a small UX upgrade to assistant message rendering. No DB changes; option keys unchanged.
+
+### Changed
+- Text domain renamed from `site-walker-wp` to `site-walker`. The plugin slug stays `site-walker-wp`; only the i18n domain changed.
+- `@package` tag renamed from `Site_Walker_WP` to `Site_Walker` across all PHP files.
+- Global-scope identifiers now use the `STWLK_` / `stwlk_` prefix (`STWLK_PLUGIN_FILE`, `STWLK_PLUGIN_DIR`, `STWLK_PLUGIN_URL`, `STWLK_PLUGIN_VERSION`, `stwlk_plugin_run()`, `stwlk_get_site_walker()`, `$stwlk_plugin`).
+- Main entry file (`site-walker-wp.php`) no longer declares a namespace.
+
+### Added
+- Assistant replies render light markdown: `**bold**`, inline `` `code` ``, and auto-linking of URLs that point to the current site's host. External URLs are deliberately left as plain text — the upstream model isn't trusted to emit safe outbound links.
+- CSS for `a` / `strong` / `code` inside assistant message bubbles.
+
+### Fixed
+- `admin-templates/settings-page.php` was declaring `namespace Site_Walker_WP` while referencing constants from `Site_Walker`, so `SETTINGS_GROUP` and `ADMIN_PAGE_SLUG` lookups would have errored at runtime.
+- Classes under `namespace Site_Walker` were referencing bare `PLUGIN_DIR` / `PLUGIN_URL` / `PLUGIN_VERSION` constants which (post-namespace) resolved to non-existent `Site_Walker\PLUGIN_*`. Switched to explicit `\STWLK_PLUGIN_*` global references.
+- Plugin bootstrap is now actually invoked — 0.2.0 shipped `stwlk_plugin_run()` defined but never called.
+
+### Docs
+- New planning docs in `dev-notes/`: integrations architecture (`10-`), WooCommerce integration (`11-`), Independent Analytics integration (`12-`), system context blocks REST API (`20-`), and operator controls brainstorm (`30-`). Project tracker updated with M4 (integrations) and M5 (operator controls) milestones.
+
 ## [0.2.0] - 2026-05-18
 
 End-to-end browser flow verified against a live Site Walker API instance.

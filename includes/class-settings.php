@@ -2,10 +2,10 @@
 /**
  * Settings registration and sanitisation.
  *
- * @package Site_Walker_WP
+ * @package Site_Walker
  */
 
-namespace Site_Walker_WP;
+namespace Site_Walker;
 
 defined( 'ABSPATH' ) || die();
 
@@ -129,56 +129,22 @@ class Settings {
 	 */
 	private function register_sections_and_fields(): void {
 		// General section.
-		add_settings_section(
-			'site_walker_wp_general',
-			__( 'General', 'site-walker-wp' ),
-			'__return_false',
-			ADMIN_PAGE_SLUG . '-general'
-		);
+		add_settings_section( 'site_walker_wp_general', __( 'General', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-general' );
 
-		add_settings_field(
-			OPT_ENABLED,
-			__( 'Enable chat widget', 'site-walker-wp' ),
-			array( $this, 'render_field_enabled' ),
-			ADMIN_PAGE_SLUG . '-general',
-			'site_walker_wp_general'
-		);
+		add_settings_field( OPT_ENABLED, __( 'Enable chat widget', 'site-walker' ), array( $this, 'render_field_enabled' ), ADMIN_PAGE_SLUG . '-general', 'site_walker_wp_general' );
 
-		add_settings_field(
-			OPT_API_URL,
-			__( 'API server URL', 'site-walker-wp' ),
-			array( $this, 'render_field_api_url' ),
-			ADMIN_PAGE_SLUG . '-general',
-			'site_walker_wp_general'
-		);
+		add_settings_field( OPT_API_URL, __( 'API server URL', 'site-walker' ), array( $this, 'render_field_api_url' ), ADMIN_PAGE_SLUG . '-general', 'site_walker_wp_general' );
 
 		// Appearance section.
-		add_settings_section(
-			'site_walker_wp_appearance',
-			__( 'Appearance', 'site-walker-wp' ),
-			'__return_false',
-			ADMIN_PAGE_SLUG . '-appearance'
-		);
+		add_settings_section( 'site_walker_wp_appearance', __( 'Appearance', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-appearance' );
 
-		add_settings_field(
-			OPT_ICON,
-			__( 'Button icon', 'site-walker-wp' ),
-			array( $this, 'render_field_icon' ),
-			ADMIN_PAGE_SLUG . '-appearance',
-			'site_walker_wp_appearance'
-		);
+		add_settings_field( OPT_ICON, __( 'Button icon', 'site-walker' ), array( $this, 'render_field_icon' ), ADMIN_PAGE_SLUG . '-appearance', 'site_walker_wp_appearance' );
 
-		add_settings_field(
-			OPT_POSITION,
-			__( 'Position', 'site-walker-wp' ),
-			array( $this, 'render_field_position' ),
-			ADMIN_PAGE_SLUG . '-appearance',
-			'site_walker_wp_appearance'
-		);
+		add_settings_field( OPT_POSITION, __( 'Position', 'site-walker' ), array( $this, 'render_field_position' ), ADMIN_PAGE_SLUG . '-appearance', 'site_walker_wp_appearance' );
 
 		add_settings_field(
 			OPT_OFFSET_X,
-			__( 'Horizontal offset (px)', 'site-walker-wp' ),
+			__( 'Horizontal offset (px)', 'site-walker' ),
 			array( $this, 'render_field_offset_x' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
@@ -186,7 +152,7 @@ class Settings {
 
 		add_settings_field(
 			OPT_OFFSET_Y,
-			__( 'Vertical offset (px)', 'site-walker-wp' ),
+			__( 'Vertical offset (px)', 'site-walker' ),
 			array( $this, 'render_field_offset_y' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
@@ -194,7 +160,7 @@ class Settings {
 
 		add_settings_field(
 			OPT_BUTTON_BG,
-			__( 'Button background', 'site-walker-wp' ),
+			__( 'Button background', 'site-walker' ),
 			array( $this, 'render_field_button_bg' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
@@ -202,7 +168,7 @@ class Settings {
 
 		add_settings_field(
 			OPT_BUTTON_FG,
-			__( 'Button icon colour', 'site-walker-wp' ),
+			__( 'Button icon colour', 'site-walker' ),
 			array( $this, 'render_field_button_fg' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
@@ -210,23 +176,17 @@ class Settings {
 
 		add_settings_field(
 			OPT_ACCENT_COLOR,
-			__( 'Chat accent colour', 'site-walker-wp' ),
+			__( 'Chat accent colour', 'site-walker' ),
 			array( $this, 'render_field_accent' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
 		);
 
-		add_settings_field(
-			OPT_HEADER_TEXT,
-			__( 'Header text', 'site-walker-wp' ),
-			array( $this, 'render_field_header_text' ),
-			ADMIN_PAGE_SLUG . '-appearance',
-			'site_walker_wp_appearance'
-		);
+		add_settings_field( OPT_HEADER_TEXT, __( 'Header text', 'site-walker' ), array( $this, 'render_field_header_text' ), ADMIN_PAGE_SLUG . '-appearance', 'site_walker_wp_appearance' );
 
 		add_settings_field(
 			OPT_PLACEHOLDER_TEXT,
-			__( 'Input placeholder', 'site-walker-wp' ),
+			__( 'Input placeholder', 'site-walker' ),
 			array( $this, 'render_field_placeholder' ),
 			ADMIN_PAGE_SLUG . '-appearance',
 			'site_walker_wp_appearance'
@@ -243,7 +203,7 @@ class Settings {
 			'<label><input type="checkbox" name="%1$s" value="1" %2$s /> %3$s</label>',
 			esc_attr( OPT_ENABLED ),
 			checked( $value, true, false ),
-			esc_html__( 'Inject the chat widget on the front-end.', 'site-walker-wp' )
+			esc_html__( 'Inject the chat widget on the front-end.', 'site-walker' )
 		);
 	}
 
@@ -254,7 +214,7 @@ class Settings {
 			esc_attr( OPT_API_URL ),
 			esc_attr( $value ),
 			esc_attr( DEF_API_URL ),
-			esc_html__( 'Base URL of the Site Walker API (no trailing slash).', 'site-walker-wp' )
+			esc_html__( 'Base URL of the Site Walker API (no trailing slash).', 'site-walker' )
 		);
 	}
 
@@ -262,12 +222,7 @@ class Settings {
 		$value = (string) get_option( OPT_ICON, DEF_ICON );
 		$opts  = '';
 		foreach ( ICON_CHOICES as $key => $label ) {
-			$opts .= sprintf(
-				'<option value="%1$s" %2$s>%3$s</option>',
-				esc_attr( $key ),
-				selected( $value, $key, false ),
-				esc_html( $label )
-			);
+			$opts .= sprintf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $key ), selected( $value, $key, false ), esc_html( $label ) );
 		}
 		printf( '<select name="%1$s">%2$s</select>', esc_attr( OPT_ICON ), $opts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $opts already escaped.
 	}
@@ -276,12 +231,7 @@ class Settings {
 		$value = (string) get_option( OPT_POSITION, DEF_POSITION );
 		$opts  = '';
 		foreach ( POSITION_CHOICES as $key => $label ) {
-			$opts .= sprintf(
-				'<option value="%1$s" %2$s>%3$s</option>',
-				esc_attr( $key ),
-				selected( $value, $key, false ),
-				esc_html( $label )
-			);
+			$opts .= sprintf( '<option value="%1$s" %2$s>%3$s</option>', esc_attr( $key ), selected( $value, $key, false ), esc_html( $label ) );
 		}
 		printf( '<select name="%1$s">%2$s</select>', esc_attr( OPT_POSITION ), $opts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $opts already escaped.
 	}
@@ -313,20 +263,12 @@ class Settings {
 
 	public function render_field_header_text(): void {
 		$value = (string) get_option( OPT_HEADER_TEXT, DEF_HEADER_TEXT );
-		printf(
-			'<input type="text" class="regular-text" name="%1$s" value="%2$s" />',
-			esc_attr( OPT_HEADER_TEXT ),
-			esc_attr( $value )
-		);
+		printf( '<input type="text" class="regular-text" name="%1$s" value="%2$s" />', esc_attr( OPT_HEADER_TEXT ), esc_attr( $value ) );
 	}
 
 	public function render_field_placeholder(): void {
 		$value = (string) get_option( OPT_PLACEHOLDER_TEXT, DEF_PLACEHOLDER_TEXT );
-		printf(
-			'<input type="text" class="regular-text" name="%1$s" value="%2$s" />',
-			esc_attr( OPT_PLACEHOLDER_TEXT ),
-			esc_attr( $value )
-		);
+		printf( '<input type="text" class="regular-text" name="%1$s" value="%2$s" />', esc_attr( OPT_PLACEHOLDER_TEXT ), esc_attr( $value ) );
 	}
 
 	private function render_number_field( string $name, int $value ): void {
@@ -334,15 +276,11 @@ class Settings {
 			'<input type="number" min="0" max="200" step="1" name="%1$s" value="%2$d" /> <span class="description">%3$s</span>',
 			esc_attr( $name ),
 			(int) $value,
-			esc_html__( 'pixels', 'site-walker-wp' )
+			esc_html__( 'pixels', 'site-walker' )
 		);
 	}
 
 	private function render_color_field( string $name, string $value ): void {
-		printf(
-			'<input type="text" class="site-walker-wp-color-field" name="%1$s" value="%2$s" data-default-color="%2$s" />',
-			esc_attr( $name ),
-			esc_attr( $value )
-		);
+		printf( '<input type="text" class="site-walker-wp-color-field" name="%1$s" value="%2$s" data-default-color="%2$s" />', esc_attr( $name ), esc_attr( $value ) );
 	}
 }
