@@ -91,9 +91,9 @@ Examples:
 
 ### Auth
 
-Routes are authenticated via a shared API key, sent as `X-Site-Walker-Key: <key>` or `Authorization: Bearer <key>`. The key is provisioned once on the API side (per-website) and entered into the plugin's General settings tab.
+Routes are authenticated via a shared API key, sent as `X-Site-Walker-Key: <key>` or `Authorization: Bearer <key>`. The key is provisioned once on the API side (per-chatbot or per-account, depending on which surface ends up driving this — likely the account admin key, since `/admin/chatbots/*` is the natural destination for any plugin → API back-channel) and entered into the plugin's General settings tab.
 
-This pairs naturally with the **M2 — Abuse-resistance** milestone, which already calls for an API key for the visitor-facing flow. The same key (or a sibling "admin key") should authenticate the API → plugin direction.
+This pairs naturally with the **M2 — Abuse-resistance** milestone and the post-M6 admin-area extension, which both call for an API key flow. The account admin key minted via `/admin/accounts/{id}/keys` is the likely candidate.
 
 **Open question:** one key or two? Two is safer (visitor-side leaks can't be used to drain integration data), but it doubles the admin-side setup friction. Recommend two but make the second one optional — falls back to the visitor key if unset.
 

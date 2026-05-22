@@ -29,7 +29,7 @@ For high-stakes controls, defend in depth: cheap layer for the common case, cano
 The single most important control. Without it, a runaway loop or a hostile visitor can cost real money overnight.
 
 **Layers:**
-- **Hard cap (API).** API tracks per-website spend. When the cap is reached, all chat completions return 402 `budget_exhausted`. Plugin's widget hides itself.
+- **Hard cap (API).** API tracks per-chatbot spend. When the daily cap is reached, mint + chat both return 402 `budget_exhausted_daily`; per-session cap terminates with `session_terminated: true` on a 200 reply. Plugin's widget hides itself (daily) or disables input (session).
 - **Soft warn (plugin).** Admin email at 80% of daily cap; admin notice in WP dashboard.
 
 **Knobs:**

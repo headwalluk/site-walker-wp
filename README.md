@@ -21,7 +21,7 @@ The widget JS gates network calls via `localStorage`, keyed per API host:
 ## Requires
 
 - WordPress 6.0+, PHP 8.0+
-- A Site Walker API instance whose website allowlist includes the WP host's origin
+- A Site Walker API instance whose chatbot allowlist includes the WP host's origin
 
 ## Docs
 

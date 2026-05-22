@@ -10,6 +10,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Admin-side "test connection" button that pings the configured API URL from the browser.
 - Conversation reset affordance (clear `localStorage`, mint fresh session).
 
+## [0.4.0] - unreleased
+
+M6 — API v0.16 catch-up. The browser chat-path endpoints (`GET /sessions/can-start`, `POST /sessions`, `POST /chat`, `GET /messages`) are unchanged at the wire level upstream; what's new is the denial vocabulary the API introduced in M20 (daily + per-session USD caps) plus the chat-path geo-lockout. This release teaches the widget to handle them gracefully.
+
+### Added
+- Widget handles `402 budget_exhausted_daily` on probe (`GET /sessions/can-start`), mint (`POST /sessions`), and chat (`POST /chat`). New `budget-exhausted` probe state is cached with an explicit "blocked until next UTC midnight" timestamp, so the widget stays hidden for the rest of the UTC day without burning HTTP traffic, and re-probes automatically the next morning. Mid-session, the input is disabled and a polite system message replaces the launcher-click status.
+- Widget handles `403 geo_blocked` on `POST /sessions`, `POST /chat`, and `GET /messages`. The cached token is dropped and the widget hides itself entirely (mint-retry would also 403, per the API contract).
+- Widget handles `200 { session_terminated: true }` on `POST /chat` (per-session hard cap). The assistant's final reply still renders, then the input row locks. A per-host `terminated` flag is persisted in `localStorage` so reloads honour the terminated state too; clearing the token (e.g. via 401 recovery) resets it.
+- `:disabled` styling on `.swwp-input` and `.swwp-send` so the locked state is visually obvious.
+
+### Changed
+- `probeApi()` returns a `{ state, until? }` object instead of a boolean, so the boot path can distinguish "budget-exhausted" from generic "unavailable" without losing the explicit reset time.
+
+### Docs
+- Terminology sweep: "website(s)" → "chatbot(s)" in `README.md` and the dev-notes planning docs, matching the upstream rename in API v0.16. The `sw website …` CLI examples are now `sw chatbot …`. No plugin code referenced the old term — only the docs did.
+- New M6 milestone recorded in `dev-notes/00-project-tracker.md`, with the next admin-area extension queued behind it.
+
 ## [0.3.0] - 2026-05-19
 
 Refactor pass to align the codebase with the project's house style, plus a small UX upgrade to assistant message rendering. No DB changes; option keys unchanged.

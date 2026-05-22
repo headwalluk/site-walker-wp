@@ -44,7 +44,7 @@ Field notes:
 
 Hard limits:
 - `body`: 4000 chars per block. Pushed back via 422 on save.
-- Total enabled blocks per website: 50. Pushed back via 409 on enable.
+- Total enabled blocks per chatbot: 50. Pushed back via 409 on enable.
 
 ---
 
@@ -200,7 +200,7 @@ If only one key is configured, integration sync and block editing degrade gracef
 
 ## Open questions for review
 
-1. **Multi-website per API instance.** If one API instance serves multiple WP sites, do blocks scope per-site automatically (by API key) or do we need an explicit `website_id` in the routes? Recommend the former — the key identifies the website.
+1. **Multi-chatbot per API instance.** If one API instance serves multiple WP sites (each a separate chatbot under one account, post-v0.16), do blocks scope per-chatbot automatically (by chatbot slug derived from the account admin key + a per-chatbot identifier) or do we need an explicit `chatbot_slug` in the routes? Recommend the former — derive from auth + the targeted resource. Note: the upstream `/admin/chatbots/{slug}/blocks` surface already exists for filesystem-backed disk blocks; this plugin-side proposal is for the richer DB-backed catalogue, and may end up sitting on top of (or alongside) that route.
 2. **Block versioning / history.** Do we want an audit trail (who changed what, when, undo)? Nice but not v1.
 3. **Markdown in block bodies.** Allow / strip / require? Recommend: store raw text, no inline markdown. The API can normalise.
 4. **Conflict resolution on concurrent edits.** Two admins editing the same block. Optimistic locking via `If-Match: <updated_at>` header. 412 on mismatch.

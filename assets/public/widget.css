@@ -219,3 +219,10 @@
 .swwp-send:focus {
 	filter: brightness(1.1);
 }
+
+.swwp-input:disabled,
+.swwp-send:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	filter: none;
+}
