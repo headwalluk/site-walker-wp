@@ -23,7 +23,23 @@ class Public_Hooks {
 
 		wp_enqueue_script( 'site-walker-wp-widget', \STWLK_PLUGIN_URL . 'assets/public/widget.js', array(), \STWLK_PLUGIN_VERSION, true );
 
-		wp_add_inline_script( 'site-walker-wp-widget', 'window.siteWalkerWP = ' . wp_json_encode( get_widget_config() ) . ';', 'before' );
+		$config = get_widget_config();
+
+		// Admin-mode session minting (M8). When the current page is being
+		// rendered to a logged-in user who can manage_options, expose the
+		// admin-session REST URL + nonce so the widget can mint a server-
+		// proxied admin-mode session instead of the standard /sessions one.
+		// The nonce is the same 'wp_rest' nonce wp-admin uses, and is
+		// short-lived + tied to the logged-in user — a non-admin viewer can't
+		// just grab one off the page.
+		if ( is_user_logged_in() && current_user_can( ADMIN_CAPABILITY ) ) {
+			$config['adminSession'] = array(
+				'url'   => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/admin-session' ) ),
+				'nonce' => wp_create_nonce( 'wp_rest' ),
+			);
+		}
+
+		wp_add_inline_script( 'site-walker-wp-widget', 'window.siteWalkerWP = ' . wp_json_encode( $config ) . ';', 'before' );
 	}
 
 	/**
@@ -45,7 +61,14 @@ class Public_Hooks {
 			(int) $config['offsetY']
 		);
 
-		printf( '<div class="site-walker-wp swwp-pos-%1$s" data-position="%1$s" style="%2$s" hidden>', esc_attr( $config['position'] ), esc_attr( $style ) );
+		// data-is-logged-in is the signal the widget JS reads to know it
+		// should mint an admin-mode session instead of the standard one
+		// (M8). It's not a credential — a non-admin who sets it manually
+		// would still fail the manage_options check on the WP REST route.
+		$is_admin_user = is_user_logged_in() && current_user_can( ADMIN_CAPABILITY );
+		$admin_attr    = $is_admin_user ? ' data-is-logged-in="1"' : '';
+
+		printf( '<div class="site-walker-wp swwp-pos-%1$s" data-position="%1$s" style="%2$s"%3$s hidden>', esc_attr( $config['position'] ), esc_attr( $style ), $admin_attr ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $admin_attr is a constant literal.
 
 		// Floating launcher.
 		printf(

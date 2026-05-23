@@ -125,6 +125,22 @@ class Admin_REST {
 				),
 			)
 		);
+
+		// Admin-mode session mint — called by the front-end widget JS when a
+		// logged-in admin user loads a page. NOT under the /admin/* prefix
+		// because it's the only route in the namespace that's called from
+		// the front end rather than wp-admin. Same manage_options + nonce
+		// gate as the /admin/* routes; the upstream POST it forwards to
+		// requires the account admin bearer key, which the WP host holds.
+		register_rest_route(
+			$ns,
+			'/admin-session',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'admin_session_post' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
 	}
 
 	/**
@@ -295,6 +311,43 @@ class Admin_REST {
 		$since = is_string( $request['since'] ?? null ) ? (string) $request['since'] : '';
 		$query = '' === $since ? array() : array( 'since' => $since );
 		return $this->proxy_to_chatbot( 'GET', null, '/usage', $query );
+	}
+
+	// ---------------------------------------------------------------------
+	// Admin-mode session mint (M8)
+	// ---------------------------------------------------------------------
+
+	/**
+	 * Mint an admin-mode session via upstream `POST /admin/chatbots/{slug}/sessions`
+	 * and relay the envelope back to the front-end widget JS.
+	 *
+	 * The capability gate (manage_options) is in `can_manage()`; this method
+	 * runs only after that's passed. We never touch or expose the account
+	 * admin key on the wire to the browser — it's resident on the WP host
+	 * and used here to make the server-to-server call.
+	 */
+	public function admin_session_post( \WP_REST_Request $request ) {
+		unset( $request );
+
+		$client = get_admin_api_client();
+		if ( ! $client ) {
+			return $this->error_response( 412, 'not_configured', array( 'message' => 'Admin key not set. Configure it in WP Settings > Site Walker > Connection.' ) );
+		}
+
+		$slug = (string) get_option( OPT_CHATBOT_SLUG, '' );
+		if ( '' === $slug ) {
+			return $this->error_response( 412, 'not_configured', array( 'message' => 'No chatbot selected. Configure it in WP Settings > Site Walker > Connection.' ) );
+		}
+
+		$result = $client->post( '/admin/chatbots/' . rawurlencode( $slug ) . '/sessions', array() );
+		if ( ! $result['ok'] ) {
+			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
+		}
+
+		// Upstream returns { session_token, welcome_message, is_admin_mode: true }.
+		// Pass it straight through; the widget JS treats this exactly like a
+		// regular `POST /sessions` response with the extra is_admin_mode flag.
+		return rest_ensure_response( $result['data'] );
 	}
 
 	// ---------------------------------------------------------------------

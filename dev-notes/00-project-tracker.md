@@ -2,8 +2,8 @@
 
 **Version:** 0.3.0
 **Last Updated:** 2026-05-23
-**Current Phase:** M7 — Admin-area extension (in progress)
-**Overall Progress:** ~45% of "v1 shippable"
+**Current Phase:** M8 — Admin mode (in progress)
+**Overall Progress:** ~50% of "v1 shippable"
 
 ---
 
@@ -18,16 +18,18 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 ## Active TODO Items
 
 ### In progress
-- [ ] **M7 — Admin-area extension.** The wp-admin surface that hangs off `/admin/chatbots/*`: Connection tab (admin key + auto-discovered chatbot slug), Chatbot tab (welcome / persona / budgets), Geo tab (mode + countries), Usage tab (read-only spend). Server-side proxy via WP REST. See M7 below and the design doc at [`40-admin-area-extension.md`](40-admin-area-extension.md).
+- [ ] **M8 — Admin mode.** Surface upstream M21's admin-mode session minting: when a logged-in WP admin loads a page, the widget calls back to a server-side WP REST route which mints an admin-mode session via `POST /admin/chatbots/{slug}/sessions` and relays the token. The account admin key never reaches the browser. See M8 below.
 
 ### Next
-- [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget). _(May land naturally as part of M7's Connection tab.)_
-- [ ] Conversation reset affordance (clear `localStorage`, mint fresh session). _(Orthogonal to M7.)_
+- [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget). _(May land naturally alongside M7 polish.)_
+- [ ] Conversation reset affordance (clear `localStorage`, mint fresh session). _(Orthogonal.)_
 
-### Done (pending 0.4.0 cut)
-- [x] **M6 — API v0.16 catch-up.** Widget handles `402 budget_exhausted_daily`, `403 geo_blocked`, and `200 { session_terminated: true }`. Terminology sweep. Verified end-to-end on devx 2026-05-23. Awaiting 0.4.0 version bump + tag.
+### Done (pending 0.5.0 cut)
+- [x] **M6 — API v0.16 catch-up.** Widget handles `402 budget_exhausted_daily`, `403 geo_blocked`, and `200 { session_terminated: true }`. Terminology sweep. Verified end-to-end on devx 2026-05-23.
+- [x] **M7 — Admin-area extension.** Connection / Chatbot / Geo / Usage tabs in wp-admin. Server-side REST proxy via `Admin_API_Client`. Account admin key stored as wp_option, never exposed to the browser. Auto-discover flow for the chatbot slug. Verified end-to-end on devx 2026-05-23.
 
 ### Later (deferred to dedicated milestones)
+- [ ] **Operational availability — widget + settings (M21 catch-up follow-up).** Widget handling for `503 chatbot_closed` (hide widget + "opens at X" message, honour `Retry-After`); Chatbot tab gains `timezone` + `availability` fields; Usage tab surfaces the new `customer` / `admin` split. Deferred from M8 to keep the slim-cut admin-mode milestone tight.
 - [ ] **Soft-handoff email capture** — on `session_terminated: true`, swap the input row for a one-field form that POSTs `/sessions/visitor-email`. Deferred from M6 to keep the catch-up tight; revisit alongside the operator-controls work in M5.
 - [ ] **Origins management in wp-admin** — `POST/DELETE /admin/chatbots/{slug}/origins` from the Connection tab. Deferred from M7 (operators use `./bin/sw chatbot origins add` today).
 - [ ] **Provider API key setting in wp-admin** — `PATCH /admin/chatbots/{slug}/api-key`. Deferred from M7 (credential-handling escalation, wants its own design pass).
@@ -86,27 +88,48 @@ Done:
 
 Still pending: 0.4.0 version bump in `site-walker-wp.php` (header + `STWLK_PLUGIN_VERSION`), tracker version line, CHANGELOG date; tag + push.
 
-### M7 — Admin-area extension (in progress)
+### M7 — Admin-area extension ✅ (pending 0.5.0 cut)
 The wp-admin surface that hangs off the upstream `/admin/chatbots/*` API. M6 made the chat path resilient to the new denial vocabulary; M7 gives the merchant the knobs that produce those denials — budget caps, geo policy, welcome message, persona — without making them shell into the host and run `./bin/sw`. Full design in [`40-admin-area-extension.md`](40-admin-area-extension.md).
 
-**Architecture (one paragraph):** wp-admin JS / forms → WP REST endpoints under `/wp-json/site-walker/v1/admin/*` (manage_options + nonce gate) → `Admin_API_Client` PHP wrapper (`wp_remote_request`, attaches the account admin bearer) → upstream `/admin/chatbots/*`. Server-side because the admin key grants full account control and must never ship to a visitor's (or even an admin's) browser.
+Architecture: wp-admin JS / forms → WP REST endpoints under `/wp-json/site-walker/v1/admin/*` (manage_options + nonce gate) → `Admin_API_Client` PHP wrapper (`wp_remote_request`, attaches the account admin bearer) → upstream `/admin/chatbots/*`. Server-side because the admin key grants full account control and must never ship to a visitor's (or even an admin's) browser.
+
+Done:
+- `Admin_API_Client` + `Admin_REST` (REST routes under `/wp-json/site-walker/v1/admin/*`, manage_options + nonce gated).
+- Four tabs in wp-admin: Connection, Chatbot, Geo, Usage. Tab gating on the API-backed three when the admin key isn't configured yet.
+- Bug-fix: unwrap upstream `{chatbots: [...]}` envelope (had assumed bare array; corrupted picker), with a `toArray()` defensive guard on the JS side.
+
+Still pending: 0.5.0 cut — `Version:` header + `STWLK_PLUGIN_VERSION` in `site-walker-wp.php`, tracker version line, CHANGELOG date. Wraps M6 + M7 + M8 together.
+
+### M8 — Admin mode (in progress)
+Surface upstream M21's admin-mode session minting in the front-end widget. When a logged-in WP admin loads a page, the widget mints a session via a new server-side WP REST route (instead of the standard `POST /sessions`), which calls upstream `POST /admin/chatbots/{slug}/sessions` using the account admin key the WP host already holds. The admin-mode session bypasses operational hours, geo, origin allowlist, daily-cap, soft-handoff, and the handoff webhook on the upstream side; the WP plugin doesn't need to special-case any of that — it just needs to know it's an admin session so it can render the welcome correctly and not pollute the customer's localStorage.
+
+**Architecture:**
+```
+Browser (admin user)             WP backend (PHP)                                site-walker API
+─────────────────────            ────────────────                                ───────────────
+data-is-logged-in="1"
+on .site-walker-wp div
+                       fetch    /wp-json/site-walker/v1/admin-session   ─►  current_user_can('manage_options') ✓
+                                                                            POST /admin/chatbots/{slug}/sessions
+                                                                            (Authorization: Bearer sw_<admin>)
+                                                                            ◄── 201 { session_token, welcome_message, is_admin_mode: true }
+                       ◄─ relay back to browser
+widget treats token
+identically to any
+session token; chats
+via /chat as usual
+```
 
 **Plugin work:**
-- [ ] **`Admin_API_Client`** — PHP wrapper around `wp_remote_request` to the upstream admin surface. Returns a uniform `[ok, data | status, error, detail]` envelope. Handles bearer-required, bearer-invalid, network errors.
-- [ ] **WP REST routes** — `/wp-json/site-walker/v1/admin/{connection, chatbot, chatbot/geo, chatbot/usage}`. Manage_options + nonce gated.
-- [ ] **Connection tab** — admin key field (masked-after-save), API URL (moved here from General), auto-discover chatbot slug after key save, test-connection button.
-- [ ] **Chatbot tab** — welcome message, persona, daily/session budget caps, soft-handoff threshold percent. Fetch-on-load, PATCH-on-save.
-- [ ] **Geo tab** — mode (`allowall` / `blocklist` / `allowlist`) + countries (ISO 3166-1 alpha-2).
-- [ ] **Usage tab** — read-only spend display with `since` selector (1h / 24h / 7d / all-time).
-- [ ] **Tab gating** — API-backed tabs (Chatbot / Geo / Usage) render a stub pointing to Connection when no valid admin key is configured.
-- [ ] **CHANGELOG + release** — entry under [Unreleased] / pending 0.5.0. Version bump and tag deferred until end-to-end verification.
+- [ ] **Server-side mint route + signal** — `POST /wp-json/site-walker/v1/admin-session` (manage_options + nonce gated), reads `OPT_CHATBOT_SLUG`, calls upstream via existing `Admin_API_Client`. Public_Hooks adds `data-is-logged-in="1"` to the widget container when the rendered page is for an admin user; localises the admin-session URL + nonce into `window.siteWalkerWP.adminSession` only in that case.
+- [ ] **Widget admin-mode branch** — detect the attribute; skip the probe (upstream skips all gates anyway); mint via the WP-backend endpoint instead of `POST /sessions`; cache the admin token under a separate `localStorage` key so it doesn't clobber a logged-out customer chat on the same browser. Welcome message renders normally — the upstream `**Admin mode**\n\n` prefix becomes the in-message visual cue via our existing markdown formatter.
+- [ ] **CHANGELOG entry** under the same pending 0.5.0 section as M6 + M7, or split into 0.6.0 — decide at release-cut time.
 
-**Explicitly out of scope** (each tracked under "Later"):
-- Origins management UI — operators use `./bin/sw chatbot origins add` today.
-- Provider (BYO) LLM API key setting — credential handling wants its own design pass.
-- Model swap — risky knob for non-technical merchants.
-- System blocks CRUD — wants its own UX (see [`20-system-blocks-api.md`](20-system-blocks-api.md)).
-- Account-level provisioning (`/admin/accounts/*`) — that's `site-walker-for-woo` territory.
+**Explicitly out of scope** (tracked under "Later" as "Operational availability — widget + settings"):
+- Widget handling for the new `503 chatbot_closed` denial.
+- Chatbot tab fields for `timezone`, `availability`, `admin_session_budget_usd`.
+- Usage tab surfacing the new `customer` / `admin` spend split.
+- `PATCH /admin/chatbots/{slug}` whitelist expansion to allow the three new fields through. (Leave the whitelist tight until the UI exposes them.)
 
 ---
 
