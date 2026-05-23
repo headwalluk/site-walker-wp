@@ -32,6 +32,7 @@ define( 'STWLK_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // define( __NAMESPACE__ . '\\PLUGIN_VERSION', '0.3.0' );
 
 require_once STWLK_PLUGIN_DIR . 'constants.php';
+require_once STWLK_PLUGIN_DIR . 'includes/class-admin-api-client.php';
 require_once STWLK_PLUGIN_DIR . 'functions-private.php';
 
 // Uncomment this if we need to add some public functions.
@@ -39,6 +40,7 @@ require_once STWLK_PLUGIN_DIR . 'functions-private.php';
 
 require_once STWLK_PLUGIN_DIR . 'includes/class-settings.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-admin-hooks.php';
+require_once STWLK_PLUGIN_DIR . 'includes/class-admin-rest.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-public-hooks.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-plugin.php';
 

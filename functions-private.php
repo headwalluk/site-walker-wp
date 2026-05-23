@@ -53,6 +53,39 @@ function is_widget_renderable(): bool {
 }
 
 /**
+ * Construct an Admin_API_Client from the stored connection options.
+ *
+ * Returns null when either the API URL or the admin key is missing or
+ * malformed — callers should treat that as "not configured" and route the
+ * UI to the Connection tab rather than attempting a request.
+ */
+function get_admin_api_client(): ?Admin_API_Client {
+	$url = (string) get_option( OPT_API_URL, DEF_API_URL );
+	$key = (string) get_option( OPT_ADMIN_KEY, '' );
+
+	if ( '' === $url || '' === $key ) {
+		return null;
+	}
+
+	$client = new Admin_API_Client( $url, $key );
+	return $client->is_configured() ? $client : null;
+}
+
+/**
+ * Mask an admin key for display — keep only the `sw_` prefix and the last 4
+ * characters. e.g. `sw_AbCd…wxyz`.
+ */
+function mask_admin_key( string $key ): string {
+	if ( '' === $key ) {
+		return '';
+	}
+	if ( strlen( $key ) <= 8 ) {
+		return str_repeat( '•', strlen( $key ) );
+	}
+	return substr( $key, 0, 3 ) . str_repeat( '•', 6 ) . substr( $key, -4 );
+}
+
+/**
  * Return the SVG markup for a built-in icon key.
  */
 function get_icon_svg( string $icon_key ): string {

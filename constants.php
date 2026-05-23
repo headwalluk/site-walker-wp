@@ -29,6 +29,12 @@ const OPT_HEADER_TEXT      = 'site_walker_wp_header_text';
 const OPT_PLACEHOLDER_TEXT = 'site_walker_wp_placeholder_text';
 const OPT_ENABLED          = 'site_walker_wp_enabled';
 
+// Admin-area connection state — set via REST, never via the Settings API.
+// Both are autoload=no (set at update_option time) since they only matter on
+// admin requests and admin REST handler invocations.
+const OPT_ADMIN_KEY        = 'site_walker_wp_admin_key';
+const OPT_CHATBOT_SLUG     = 'site_walker_wp_chatbot_slug';
+
 // Default values (DEF_ prefix).
 const DEF_API_URL          = 'https://api.site-walker.net';
 const DEF_POSITION         = 'bottom-right';
@@ -60,3 +66,11 @@ const ICON_CHOICES = array(
 const PROBE_COOLDOWN_SECONDS = 3600; // How long to wait before re-probing an unreachable API.
 const PROBE_AVAILABLE_TTL    = 86400; // How long to trust a successful probe.
 const MAX_MESSAGE_LENGTH     = 8000;
+
+// Admin REST namespace + route prefix. All M7 admin proxy routes mount under
+// /wp-json/site-walker/v1/admin/*.
+const ADMIN_REST_NAMESPACE   = 'site-walker/v1';
+const ADMIN_REST_ROOT        = 'admin';
+
+// Account admin key shape — matches the upstream sw_ + 43 base64url chars.
+const ADMIN_KEY_REGEX        = '/^sw_[A-Za-z0-9_-]{43}$/';

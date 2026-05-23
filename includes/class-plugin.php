@@ -17,6 +17,8 @@ class Plugin {
 
 	private ?Public_Hooks $public_hooks = null;
 
+	private ?Admin_REST $admin_rest = null;
+
 	// Moved into run()
 	// public function __construct() {
 	// $this->settings = new Settings();
@@ -34,6 +36,11 @@ class Plugin {
 		add_action( 'admin_init', array( $this->settings, 'register_settings' ) );
 
 		$public_hooks = $this->get_public_hooks();
+
+		// REST routes mount under wp-json/site-walker/v1/admin/* and are gated
+		// on manage_options — register them regardless of context so they're
+		// reachable from both admin XHRs and any internal callers.
+		add_action( 'rest_api_init', array( $this->get_admin_rest(), 'register_routes' ) );
 
 		if ( is_admin() ) {
 			$admin_hooks = $this->get_admin_hooks();
@@ -69,5 +76,13 @@ class Plugin {
 		}
 
 		return $this->public_hooks;
+	}
+
+	public function get_admin_rest(): Admin_REST {
+		if ( is_null( $this->admin_rest ) ) {
+			$this->admin_rest = new Admin_REST();
+		}
+
+		return $this->admin_rest;
 	}
 }
