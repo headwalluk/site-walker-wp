@@ -9,51 +9,52 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Pending
 - Conversation reset affordance (clear `localStorage`, mint fresh session).
 
-## [0.5.0] - unreleased
+## [0.5.0] - 2026-05-23
 
-M7 — Admin-area extension (new wp-admin tabs over `/admin/chatbots/*`) and M8 — Admin mode (per-admin session minting via the upstream M21 `POST /admin/chatbots/{slug}/sessions` route). Same release because both ride on the same server-side proxy (`Admin_API_Client`) and the same account-admin key already stored on the WP host. The account admin key is never exposed to the browser in either flow.
+Catches the plugin up to two upstream API releases (v0.16 M20 budget caps + handoff, v0.17 M21 operational availability + admin-mode sessions) and ships the wp-admin surface operators have been waiting for. Three milestones rolled into one release because they share the same server-side proxy (`Admin_API_Client`), the same account admin key on the WP host, and the same end-to-end verification pass on devx 2026-05-23.
 
-### Added (M8 — Admin mode)
-- New WP REST route `POST /wp-json/site-walker/v1/admin-session` — manage_options + nonce gated, forwards to upstream `POST /admin/chatbots/{slug}/sessions` via the existing `Admin_API_Client`. Returns the upstream `{ session_token, welcome_message, is_admin_mode: true }` envelope unchanged.
-- Widget container carries `data-is-logged-in="1"` when rendered for a logged-in `manage_options` user; `window.siteWalkerWP.adminSession` (admin-session URL + nonce) is localised only in that case.
-- Widget `boot()` and `ensureSession()` branch on admin mode: skip the probe (upstream skips every gate the probe tests for), mint via the WP backend on first launcher click, cache the admin token under a separate `localStorage` key (`site-walker-wp:<host>:admin-session-token`) so admin and customer sessions on the same browser don't clobber each other.
-- The upstream's `**Admin mode**\n\n` welcome-message prefix renders as bold via our existing assistant-message markdown formatter — visible in-message cue, no new widget chrome.
+### Added — chat path resilience (M6, API v0.16 catch-up)
+- Widget handles `402 budget_exhausted_daily` on probe (`GET /sessions/can-start`), mint (`POST /sessions`), and chat (`POST /chat`). A new `budget-exhausted` probe state is cached with an explicit "blocked until next UTC midnight" timestamp, so the widget stays hidden for the rest of the UTC day without burning HTTP traffic, and re-probes automatically the next morning. Mid-session, the input is disabled and a polite system message replaces the launcher-click status.
+- Widget handles `403 geo_blocked` on `POST /sessions`, `POST /chat`, and `GET /messages`. The cached token is dropped and the widget hides itself entirely (mint-retry would also 403, per the API contract).
+- Widget handles `200 { session_terminated: true }` on `POST /chat` (per-session hard cap). The assistant's final reply still renders, then the input row locks. A per-host `terminated` flag is persisted in `localStorage` so reloads honour the terminated state too; clearing the token (e.g. via 401 recovery) resets it.
+- `:disabled` styling on `.swwp-input` and `.swwp-send` so the locked state is visually obvious.
 
-### Added (M7 — Admin-area extension)
-
-### Added
+### Added — Admin-area extension (M7)
 - `Admin_API_Client` — thin PHP wrapper over `wp_remote_request` for the upstream `/admin/chatbots/*` surface. Returns a uniform `[ok, status, data | error, detail]` envelope; carries the bearer admin key on every request; never logs it.
 - `Admin_REST` — WP REST routes under `/wp-json/site-walker/v1/admin/*` for the four new tabs. All gated on `manage_options` + WP REST cookie nonce. PATCH bodies whitelist their allowed fields so an admin can't piggy-back un-exposed fields like `model_slug` through the proxy.
 - **Connection tab.** API URL, account admin key (password input on first save, masked-to-last-4 thereafter with Clear / Replace buttons), auto-discovered chatbot slug (single chatbot → auto-save; multi → picker dropdown; zero → friendly message). Test-connection button.
 - **Chatbot tab.** Welcome message, persona, daily / session budget caps (USD), soft-handoff threshold percent. Fetch-on-tab-open, PATCH on save. Empty-string textarea fields are translated to `null` on the way to the API so a clear-and-save actually clears the upstream field.
 - **Geo tab.** Mode (`allowall` / `blocklist` / `allowlist`) as a radio group; countries as a freeform textarea (comma / whitespace / newline separated, normalised to uppercase ISO 3166-1 alpha-2). A chip-input picker is on the v2 list.
 - **Usage tab.** Read-only spend display with a `since` selector (1h / 24h / 7d / 30d / all time). Renders any operator-actionable warnings (e.g. under-counting on NULL-priced models) inline.
-- New design doc: `dev-notes/40-admin-area-extension.md` covers the medium-cut scope, architecture, storage model, auto-discover flow, error model, and what's intentionally deferred.
+
+### Added — Admin mode (M8, API v0.17 M21)
+- New WP REST route `POST /wp-json/site-walker/v1/admin-session` — manage_options + nonce gated, forwards to upstream `POST /admin/chatbots/{slug}/sessions` via `Admin_API_Client`. Returns the `{ session_token, welcome_message, is_admin_mode: true }` envelope unchanged.
+- Widget container carries `data-is-logged-in="1"` when rendered for a logged-in `manage_options` user; `window.siteWalkerWP.adminSession` (admin-session URL + nonce) is localised only in that case.
+- Widget `boot()` and `ensureSession()` branch on admin mode: skip the probe (upstream skips every gate the probe tests for), mint via the WP backend on first launcher click, cache the admin token under a separate `localStorage` key (`site-walker-wp:<host>:admin-session-token`) so admin and customer sessions on the same browser don't clobber each other.
+- The upstream's `**Admin mode**\n\n` welcome-message prefix renders as bold via our existing assistant-message markdown formatter — visible in-message cue, no new widget chrome.
+
+### Added — UX polish
+- **Trusted external hosts allowlist** on the Widget tab. URLs in assistant replies pointing to operator-curated hosts become clickable; same-site URLs are always clickable; everything else stays as plain text. External links get `target="_blank" rel="noopener noreferrer nofollow"`. Stored locally as a wp_option; exact host match only.
+- Input textarea grows from one row to two so longer messages feel less cramped.
 
 ### Changed
-- General tab renamed to **Widget** — the only Settings-API-driven knobs that remain there are the widget render options. The API URL field moved to the new Connection tab and is now REST-managed (not registered via the Settings API).
-- Tab page restructured to host two tab families: Settings-API-driven (Widget, Appearance) wrapped in the shared `options.php` form, and REST-driven (Connection, Chatbot, Geo, Usage) each loading from its own partial under `admin-templates/tabs/`. The shared submit button now only shows when a Settings-API tab is active.
+- General tab renamed to **Widget** — the Settings-API-driven knobs that remain there are pure widget render options. The API URL field moved to the new Connection tab and is now REST-managed (not registered via the Settings API).
+- Tab page restructured to host two tab families: Settings-API-driven (Widget, Appearance) wrapped in the shared `options.php` form, and REST-driven (Connection, Chatbot, Geo, Usage) each loading from its own partial under `admin-templates/tabs/`. The shared submit button only shows when a Settings-API tab is active.
 - Tab switching dispatches a `swwp:tab-activate` custom event so each REST-driven tab can refetch on display.
-
-### Notes
-- **What's deliberately out of scope** (each tracked under "Later" in the project tracker): origins management UI, BYO provider API key setting, model swap, system blocks CRUD, account-level provisioning. Each was excluded for a stated reason (credential handling, blast-radius, or "wants its own UX") rather than time pressure.
-
-## [0.4.0] - unreleased
-
-M6 — API v0.16 catch-up. The browser chat-path endpoints (`GET /sessions/can-start`, `POST /sessions`, `POST /chat`, `GET /messages`) are unchanged at the wire level upstream; what's new is the denial vocabulary the API introduced in M20 (daily + per-session USD caps) plus the chat-path geo-lockout. This release teaches the widget to handle them gracefully.
-
-### Added
-- Widget handles `402 budget_exhausted_daily` on probe (`GET /sessions/can-start`), mint (`POST /sessions`), and chat (`POST /chat`). New `budget-exhausted` probe state is cached with an explicit "blocked until next UTC midnight" timestamp, so the widget stays hidden for the rest of the UTC day without burning HTTP traffic, and re-probes automatically the next morning. Mid-session, the input is disabled and a polite system message replaces the launcher-click status.
-- Widget handles `403 geo_blocked` on `POST /sessions`, `POST /chat`, and `GET /messages`. The cached token is dropped and the widget hides itself entirely (mint-retry would also 403, per the API contract).
-- Widget handles `200 { session_terminated: true }` on `POST /chat` (per-session hard cap). The assistant's final reply still renders, then the input row locks. A per-host `terminated` flag is persisted in `localStorage` so reloads honour the terminated state too; clearing the token (e.g. via 401 recovery) resets it.
-- `:disabled` styling on `.swwp-input` and `.swwp-send` so the locked state is visually obvious.
-
-### Changed
 - `probeApi()` returns a `{ state, until? }` object instead of a boolean, so the boot path can distinguish "budget-exhausted" from generic "unavailable" without losing the explicit reset time.
 
+### Fixed
+- Upstream `GET /admin/chatbots` returns `{chatbots: [...]}`, not a bare array — the Connection tab's chatbot picker now unwraps the envelope correctly. Added a `toArray()` defensive guard on the JS side so a malformed payload degrades to "0 chatbots visible" rather than a `TypeError`.
+
 ### Docs
-- Terminology sweep: "website(s)" → "chatbot(s)" in `README.md` and the dev-notes planning docs, matching the upstream rename in API v0.16. The `sw website …` CLI examples are now `sw chatbot …`. No plugin code referenced the old term — only the docs did.
-- New M6 milestone recorded in `dev-notes/00-project-tracker.md`, with the next admin-area extension queued behind it.
+- Terminology sweep: "website(s)" → "chatbot(s)" in `README.md` and the dev-notes planning docs, matching the upstream rename in API v0.16.
+- New design doc: `dev-notes/40-admin-area-extension.md` covers the M7 medium-cut scope, architecture, storage model, auto-discover flow, error model, and what's intentionally deferred.
+- New `CLAUDE.md` at the plugin root capturing the `widget.js` NUL-byte sentinel gotcha (and why git treats the file as binary) so future editors don't repeat the diagnostic.
+- M6 / M7 / M8 milestones recorded in `dev-notes/00-project-tracker.md`.
+
+### Notes
+- **What's deliberately out of scope** (each tracked under "Later" in the project tracker): operational availability handling in the widget (`503 chatbot_closed`) + the corresponding Chatbot / Usage tab fields, origins management UI, BYO provider API key setting, model swap, system blocks CRUD, soft-handoff email capture form. Each was excluded for a stated reason rather than time pressure.
+- **Existing settings are preserved.** General → Widget is a UI-label rename only; option keys are unchanged, so existing installs keep their tuned values across the upgrade.
 
 ## [0.3.0] - 2026-05-19
 

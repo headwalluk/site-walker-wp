@@ -2,7 +2,7 @@
 
 A floating front-end chat widget for WordPress, talking directly to a [Site Walker](https://site-walker.net) API instance from the visitor's browser.
 
-**Status:** 0.3.0 — pre-alpha.
+**Status:** 0.5.0 — alpha.
 
 ## Install
 
