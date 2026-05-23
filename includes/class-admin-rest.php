@@ -255,10 +255,22 @@ class Admin_REST {
 			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
 		}
 
+		$chatbots = is_array( $result['data'] ) ? $result['data'] : array();
+		$summarised = array_map(
+			static function ( $chatbot ) {
+				return array(
+					'slug' => isset( $chatbot['slug'] ) ? (string) $chatbot['slug'] : '',
+					'name' => isset( $chatbot['name'] ) ? (string) $chatbot['name'] : '',
+				);
+			},
+			$chatbots
+		);
+
 		return rest_ensure_response(
 			array(
-				'ok'    => true,
-				'count' => is_array( $result['data'] ) ? count( $result['data'] ) : 0,
+				'ok'           => true,
+				'chatbots'     => $summarised,
+				'chatbot_slug' => (string) get_option( OPT_CHATBOT_SLUG, '' ),
 			)
 		);
 	}

@@ -14,3 +14,73 @@
 	display: inline-block;
 	vertical-align: top;
 }
+
+.site-walker-wp-settings .swwp-key-mask {
+	padding: 4px 8px;
+	background: #f0f0f1;
+	border-radius: 3px;
+	margin-right: 8px;
+	font-family: Menlo, Consolas, Monaco, monospace;
+}
+
+.site-walker-wp-settings .swwp-chatbot-picker {
+	margin-top: 8px;
+	padding: 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.site-walker-wp-settings .swwp-status {
+	margin-left: 12px;
+	font-style: italic;
+	color: #50575e;
+}
+
+.site-walker-wp-settings .swwp-status.is-success {
+	color: #00712d;
+	font-style: normal;
+}
+
+.site-walker-wp-settings .swwp-status.is-error {
+	color: #b32d2e;
+	font-style: normal;
+}
+
+.site-walker-wp-settings .swwp-status.is-warning {
+	color: #a55b00;
+	font-style: normal;
+}
+
+.site-walker-wp-settings .swwp-status.is-info {
+	color: #2271b1;
+	font-style: normal;
+}
+
+.site-walker-wp-settings .swwp-active-chatbot {
+	margin-right: 12px;
+}
+
+.site-walker-wp-settings .swwp-active-chatbot code {
+	background: #e7f5ea;
+	padding: 2px 6px;
+	border-radius: 3px;
+}
+
+/* Save button row that lives at the bottom of REST-driven tabs. */
+.site-walker-wp-settings .swwp-tab-save {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #dcdcde;
+}
+
+/* Stub shown on API-backed tabs before the admin key is configured. */
+.site-walker-wp-settings .swwp-not-configured {
+	padding: 24px;
+	background: #f6f7f7;
+	border-left: 4px solid #c3c4c7;
+	text-align: center;
+}

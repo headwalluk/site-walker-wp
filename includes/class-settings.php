@@ -16,7 +16,9 @@ class Settings {
 	 */
 	public function register_settings(): void {
 		$this->register_option( OPT_ENABLED, 'boolean', false, array( $this, 'sanitize_bool' ) );
-		$this->register_option( OPT_API_URL, 'string', DEF_API_URL, array( $this, 'sanitize_url' ) );
+		// API URL is managed by the Connection tab via REST (not via the
+		// Settings API), so it isn't registered here. The widget still reads
+		// it from wp_options via get_option() with DEF_API_URL as default.
 		$this->register_option( OPT_POSITION, 'string', DEF_POSITION, array( $this, 'sanitize_position' ) );
 		$this->register_option( OPT_OFFSET_X, 'integer', DEF_OFFSET_X, array( $this, 'sanitize_offset' ) );
 		$this->register_option( OPT_OFFSET_Y, 'integer', DEF_OFFSET_Y, array( $this, 'sanitize_offset' ) );
@@ -37,20 +39,6 @@ class Settings {
 	 */
 	public function sanitize_bool( $value ): bool {
 		return (bool) filter_var( $value, FILTER_VALIDATE_BOOLEAN );
-	}
-
-	/**
-	 * Sanitise an API base URL. Empty values fall back to the default so the
-	 * front-end never inherits a broken value.
-	 *
-	 * @param mixed $value Raw value.
-	 */
-	public function sanitize_url( $value ): string {
-		$raw   = is_string( $value ) ? trim( $value ) : '';
-		$clean = esc_url_raw( $raw );
-		$final = '' === $clean ? DEF_API_URL : untrailingslashit( $clean );
-
-		return $final;
 	}
 
 	/**
@@ -128,12 +116,12 @@ class Settings {
 	 * Register Settings API sections and fields for the admin page.
 	 */
 	private function register_sections_and_fields(): void {
-		// General section.
-		add_settings_section( 'site_walker_wp_general', __( 'General', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-general' );
+		// Widget section — previously named "General" pre-M7; renamed because
+		// the API URL field moved to the new Connection tab and what's left
+		// is purely widget-render knobs.
+		add_settings_section( 'site_walker_wp_widget', __( 'Widget', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-widget' );
 
-		add_settings_field( OPT_ENABLED, __( 'Enable chat widget', 'site-walker' ), array( $this, 'render_field_enabled' ), ADMIN_PAGE_SLUG . '-general', 'site_walker_wp_general' );
-
-		add_settings_field( OPT_API_URL, __( 'API server URL', 'site-walker' ), array( $this, 'render_field_api_url' ), ADMIN_PAGE_SLUG . '-general', 'site_walker_wp_general' );
+		add_settings_field( OPT_ENABLED, __( 'Enable chat widget', 'site-walker' ), array( $this, 'render_field_enabled' ), ADMIN_PAGE_SLUG . '-widget', 'site_walker_wp_widget' );
 
 		// Appearance section.
 		add_settings_section( 'site_walker_wp_appearance', __( 'Appearance', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-appearance' );
@@ -204,17 +192,6 @@ class Settings {
 			esc_attr( OPT_ENABLED ),
 			checked( $value, true, false ),
 			esc_html__( 'Inject the chat widget on the front-end.', 'site-walker' )
-		);
-	}
-
-	public function render_field_api_url(): void {
-		$value = (string) get_option( OPT_API_URL, DEF_API_URL );
-		printf(
-			'<input type="url" class="regular-text code" name="%1$s" value="%2$s" placeholder="%3$s" /><p class="description">%4$s</p>',
-			esc_attr( OPT_API_URL ),
-			esc_attr( $value ),
-			esc_attr( DEF_API_URL ),
-			esc_html__( 'Base URL of the Site Walker API (no trailing slash).', 'site-walker' )
 		);
 	}
 

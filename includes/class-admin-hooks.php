@@ -55,5 +55,27 @@ class Admin_Hooks {
 		wp_enqueue_style( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.css', array(), \STWLK_PLUGIN_VERSION );
 
 		wp_enqueue_script( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.js', array( 'wp-color-picker' ), \STWLK_PLUGIN_VERSION, true );
+
+		// REST config the admin JS needs to talk to /wp-json/site-walker/v1/admin/*.
+		// Nonce is the standard 'wp_rest' nonce — WP REST will accept it on X-WP-Nonce.
+		$config = array(
+			'restRoot' => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
+			'nonce'    => wp_create_nonce( 'wp_rest' ),
+			'strings'  => array(
+				'unexpectedError'   => __( 'Something went wrong. Please try again.', 'site-walker' ),
+				'bearerInvalid'     => __( 'Admin key not recognised. Check that it\'s the right key and hasn\'t been revoked.', 'site-walker' ),
+				'wrongScope'        => __( 'This is a provisioning key, not an account admin key. Mint one with `./bin/sw account add-admin-key`.', 'site-walker' ),
+				'notFound'          => __( 'No chatbot found with this slug. Pick a different one from Connection.', 'site-walker' ),
+				'transportError'    => __( 'Couldn\'t reach the API server. Check the URL is correct and the server is up.', 'site-walker' ),
+				'noChatbots'        => __( 'Admin key works, but no chatbots were found for the account. Create one with `./bin/sw chatbot create`.', 'site-walker' ),
+				'connectionOk'      => __( 'Connection OK.', 'site-walker' ),
+				'savedAndConnected' => __( 'Saved. Connected to:', 'site-walker' ),
+				'saved'             => __( 'Saved.', 'site-walker' ),
+				'clearConfirm'      => __( 'Clear the saved admin key? You\'ll need to paste it again to manage the chatbot from here.', 'site-walker' ),
+				'notConnected'      => __( 'Not connected.', 'site-walker' ),
+			),
+		);
+
+		wp_add_inline_script( 'site-walker-wp-admin', 'window.siteWalkerWPAdmin = ' . wp_json_encode( $config ) . ';', 'before' );
 	}
 }
