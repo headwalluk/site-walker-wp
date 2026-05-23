@@ -111,7 +111,7 @@ class Public_Hooks {
 		);
 		$panel .= '<div class="swwp-messages" aria-live="polite"></div>';
 		$panel .= sprintf(
-			'<form class="swwp-input-row" autocomplete="off"><textarea class="swwp-input" rows="1" placeholder="%1$s" maxlength="%2$d"></textarea><button type="submit" class="swwp-send button" aria-label="%3$s">&rarr;</button></form>',
+			'<form class="swwp-input-row" autocomplete="off"><textarea class="swwp-input" rows="2" placeholder="%1$s" maxlength="%2$d"></textarea><button type="submit" class="swwp-send button" aria-label="%3$s">&rarr;</button></form>',
 			esc_attr( $config['placeholderText'] ),
 			(int) $config['maxMessageLen'],
 			esc_attr__( 'Send message', 'site-walker' )

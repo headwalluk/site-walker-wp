@@ -183,10 +183,15 @@
 
 .swwp-input-row {
 	display: flex;
+	align-items: flex-end;
 	gap: 6px;
 	padding: 10px;
 	border-top: 1px solid #e5e7eb;
 	background: #fff;
+}
+
+.swwp-input-row .swwp-send {
+	height: 40px;
 }
 
 .swwp-input {
