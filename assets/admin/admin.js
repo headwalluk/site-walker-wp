@@ -171,6 +171,14 @@
 		}
 
 		// "Save & connect" — POST /connection with admin key (+ optional URL).
+		//
+		// On success we reload the page rather than mutating DOM state in
+		// place. The Connection tab has several pieces of UI whose presence
+		// vs. absence depends on whether a key is saved (the Clear / Replace
+		// buttons, the masked-key display, the picker toggle); rendering
+		// those from the server template on a fresh page load is much more
+		// robust than threading the transitions through JS. The flash of a
+		// page reload is a fine trade for a once-per-setup action.
 		keySaveBtn.addEventListener('click', async () => {
 			const key = (keyInput.value || '').trim();
 			const apiUrl = (apiUrlInput.value || '').trim();
@@ -181,45 +189,23 @@
 
 			const result = await apiCall('POST', '/connection', { admin_key: key, api_url: apiUrl });
 
-			keySaveBtn.disabled = false;
-
 			if (!result.ok) {
+				keySaveBtn.disabled = false;
 				setStatus(errorMessage(result), 'error');
 				return;
-			}
-
-			// Swap the input for the masked display.
-			keyRow.dataset.state = 'saved';
-			keyInput.value = '';
-			keyInput.hidden = true;
-			keySaveBtn.hidden = true;
-
-			// Add the masked display + clear/replace buttons if not already
-			// present (first save after a fresh page load).
-			if (!keyMaskEl) {
-				const code = document.createElement('code');
-				code.className = 'swwp-key-mask';
-				code.textContent = 'sw_••••••…';
-				keyInput.parentNode.insertBefore(code, keyInput);
 			}
 
 			const chatbots = result.data.chatbots || [];
 			if (chatbots.length === 0) {
 				setStatus(STR.noChatbots, 'warning');
-				renderChatbot('');
 			} else if (chatbots.length === 1) {
-				renderChatbot(result.data.chatbot_slug || chatbots[0].slug);
-				setStatus(STR.savedAndConnected + ' ' + (chatbots[0].name || chatbots[0].slug), 'success');
+				setStatus(STR.savedAndConnected + ' ' + (chatbots[0].name || chatbots[0].slug) + '. Reloading…', 'success');
 			} else {
-				renderChatbot(result.data.chatbot_slug || '');
-				populatePicker(chatbots, result.data.chatbot_slug || '');
-				picker.hidden = false;
-				setStatus('Pick which chatbot this WordPress install manages.', 'info');
+				setStatus('Connected — pick your chatbot after reload…', 'info');
 			}
 
-			// Reload the page after a short delay so the server-rendered key
-			// markup (clear/replace buttons) is correct on next interaction.
-			// Skipping for now — the in-page state is consistent enough.
+			// Tiny pause so the user sees the success message before reload.
+			setTimeout(() => window.location.reload(), 600);
 		});
 
 		// "Clear" — DELETE /connection.
@@ -377,6 +363,12 @@
 
 		saveBtn.addEventListener('click', async () => {
 			const body = collectFields(formEl);
+			// Upstream treats null as "clear" for nullable string fields. An
+			// empty string is likely to be rejected as validation_failed, so
+			// translate empties on the way out.
+			['welcome_message', 'persona'].forEach((k) => {
+				if (body[k] === '') body[k] = null;
+			});
 			saveBtn.disabled = true;
 			setStatus('Saving…');
 			const result = await apiCall('PATCH', '/chatbot', body);
