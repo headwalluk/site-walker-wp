@@ -84,3 +84,23 @@
 	border-left: 4px solid #c3c4c7;
 	text-align: center;
 }
+
+.site-walker-wp-settings .swwp-usage-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.site-walker-wp-settings .swwp-usage-table th {
+	width: 240px;
+	text-align: left;
+}
+
+.site-walker-wp-settings .swwp-usage-table .swwp-usage-value {
+	font-family: Menlo, Consolas, Monaco, monospace;
+}
+
+.site-walker-wp-settings .swwp-usage-warnings {
+	margin-bottom: 12px;
+}

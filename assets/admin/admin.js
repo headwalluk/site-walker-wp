@@ -89,7 +89,11 @@
 				tab.classList.toggle('nav-tab-active', tab.dataset.tab === name);
 			});
 			panels.forEach((panel) => {
-				panel.style.display = panel.dataset.panel === name ? 'block' : 'none';
+				const visible = panel.dataset.panel === name;
+				panel.style.display = visible ? 'block' : 'none';
+				if (visible) {
+					panel.dispatchEvent(new CustomEvent('swwp:tab-activate'));
+				}
 			});
 			if (submitBtn) {
 				submitBtn.style.display = SETTINGS_API_TABS.has(name) ? '' : 'none';
@@ -289,9 +293,298 @@
 		}
 	}
 
+	// ---------------------------------------------------------------------
+	// Shared helpers for the REST-driven editable tabs (Chatbot, Geo).
+	// ---------------------------------------------------------------------
+
+	// Pull a `data-field`-decorated form into a flat object. Number-typed
+	// inputs are returned as Number or null (empty string → null); checkboxes
+	// as boolean; everything else as string.
+	function collectFields(root) {
+		const out = {};
+		root.querySelectorAll('[data-field]').forEach((el) => {
+			const name = el.dataset.field;
+			let value;
+			if (el.type === 'number') {
+				value = el.value === '' ? null : Number(el.value);
+			} else if (el.type === 'checkbox') {
+				value = el.checked;
+			} else {
+				value = el.value;
+			}
+			out[name] = value;
+		});
+		return out;
+	}
+
+	// Reverse of collectFields() — populate `data-field` inputs from a
+	// loaded server object. Null / undefined values render as empty.
+	function populateFields(root, data) {
+		root.querySelectorAll('[data-field]').forEach((el) => {
+			const name = el.dataset.field;
+			const value = data && data[name];
+			if (el.type === 'checkbox') {
+				el.checked = !!value;
+			} else if (value === null || value === undefined) {
+				el.value = '';
+			} else {
+				el.value = String(value);
+			}
+		});
+	}
+
+	// ---------------------------------------------------------------------
+	// Chatbot tab
+	// ---------------------------------------------------------------------
+	function initChatbotTab() {
+		const panel = document.querySelector('#chatbot-panel');
+		if (!panel) return;
+
+		const notConfigured = panel.querySelector('.swwp-not-configured');
+		const loadingEl     = panel.querySelector('.swwp-tab-loading');
+		const formEl        = panel.querySelector('.swwp-tab-form');
+		const saveBtn       = panel.querySelector('.swwp-chatbot-save');
+		const reloadBtn     = panel.querySelector('.swwp-chatbot-reload');
+		const statusEl      = panel.querySelector('.swwp-status');
+
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		async function load() {
+			notConfigured.hidden = true;
+			formEl.hidden = true;
+			loadingEl.hidden = false;
+			setStatus('');
+
+			const result = await apiCall('GET', '/chatbot');
+			loadingEl.hidden = true;
+
+			if (!result.ok) {
+				if (result.error === 'not_configured') {
+					notConfigured.hidden = false;
+					return;
+				}
+				setStatus(errorMessage(result), 'error');
+				formEl.hidden = false;
+				return;
+			}
+
+			populateFields(formEl, result.data || {});
+			formEl.hidden = false;
+		}
+
+		saveBtn.addEventListener('click', async () => {
+			const body = collectFields(formEl);
+			saveBtn.disabled = true;
+			setStatus('Saving…');
+			const result = await apiCall('PATCH', '/chatbot', body);
+			saveBtn.disabled = false;
+			if (!result.ok) {
+				setStatus(errorMessage(result), 'error');
+				return;
+			}
+			populateFields(formEl, result.data || {});
+			setStatus(STR.saved, 'success');
+		});
+
+		reloadBtn.addEventListener('click', load);
+
+		panel.addEventListener('swwp:tab-activate', load);
+	}
+
+	// ---------------------------------------------------------------------
+	// Geo tab
+	// ---------------------------------------------------------------------
+	function initGeoTab() {
+		const panel = document.querySelector('#geo-panel');
+		if (!panel) return;
+
+		const notConfigured = panel.querySelector('.swwp-not-configured');
+		const loadingEl     = panel.querySelector('.swwp-tab-loading');
+		const formEl        = panel.querySelector('.swwp-tab-form');
+		const countriesEl   = panel.querySelector('#swwp-geo-countries');
+		const saveBtn       = panel.querySelector('.swwp-geo-save');
+		const reloadBtn     = panel.querySelector('.swwp-geo-reload');
+		const statusEl      = panel.querySelector('.swwp-status');
+
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		function populateGeo(data) {
+			const mode = (data && data.mode) || 'allowall';
+			const radio = formEl.querySelector(`input[name="swwp-geo-mode"][value="${mode}"]`);
+			if (radio) radio.checked = true;
+			const countries = (data && Array.isArray(data.countries)) ? data.countries : [];
+			countriesEl.value = countries.join(', ');
+		}
+
+		function collectGeo() {
+			const modeEl = formEl.querySelector('input[name="swwp-geo-mode"]:checked');
+			const mode = modeEl ? modeEl.value : 'allowall';
+			// Split on commas, whitespace, or newlines; uppercase; drop empties
+			// and anything that isn't exactly two A-Z chars.
+			const raw = (countriesEl.value || '').split(/[\s,]+/);
+			const countries = raw
+				.map((c) => c.trim().toUpperCase())
+				.filter((c) => /^[A-Z]{2}$/.test(c));
+			return { mode, countries };
+		}
+
+		async function load() {
+			notConfigured.hidden = true;
+			formEl.hidden = true;
+			loadingEl.hidden = false;
+			setStatus('');
+
+			const result = await apiCall('GET', '/chatbot/geo');
+			loadingEl.hidden = true;
+
+			if (!result.ok) {
+				if (result.error === 'not_configured') {
+					notConfigured.hidden = false;
+					return;
+				}
+				setStatus(errorMessage(result), 'error');
+				formEl.hidden = false;
+				return;
+			}
+
+			populateGeo(result.data || {});
+			formEl.hidden = false;
+		}
+
+		saveBtn.addEventListener('click', async () => {
+			const body = collectGeo();
+			saveBtn.disabled = true;
+			setStatus('Saving…');
+			const result = await apiCall('PATCH', '/chatbot/geo', body);
+			saveBtn.disabled = false;
+			if (!result.ok) {
+				setStatus(errorMessage(result), 'error');
+				return;
+			}
+			populateGeo(result.data || {});
+			setStatus(STR.saved, 'success');
+		});
+
+		reloadBtn.addEventListener('click', load);
+
+		panel.addEventListener('swwp:tab-activate', load);
+	}
+
+	// ---------------------------------------------------------------------
+	// Usage tab
+	// ---------------------------------------------------------------------
+	function initUsageTab() {
+		const panel = document.querySelector('#usage-panel');
+		if (!panel) return;
+
+		const notConfigured = panel.querySelector('.swwp-not-configured');
+		const loadingEl     = panel.querySelector('.swwp-tab-loading');
+		const formEl        = panel.querySelector('.swwp-tab-form');
+		const sinceEl       = panel.querySelector('#swwp-usage-since');
+		const reloadBtn     = panel.querySelector('.swwp-usage-reload');
+		const statusEl      = panel.querySelector('.swwp-status');
+		const warningsEl    = panel.querySelector('.swwp-usage-warnings');
+		const periodEl      = panel.querySelector('.swwp-usage-period');
+
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		function formatCost(n) {
+			if (typeof n !== 'number') return '—';
+			// Show four decimals when below a dollar so per-message costs are
+			// visible; two decimals otherwise.
+			return '$' + (n < 1 ? n.toFixed(4) : n.toFixed(2));
+		}
+
+		function formatInt(n) {
+			if (typeof n !== 'number') return '—';
+			return n.toLocaleString();
+		}
+
+		function renderUsage(data) {
+			data = data || {};
+			panel.querySelectorAll('.swwp-usage-value').forEach((cell) => {
+				const field = cell.dataset.field;
+				const value = data[field];
+				if (field === 'cost_usd') {
+					cell.textContent = formatCost(value);
+				} else {
+					cell.textContent = formatInt(value);
+				}
+			});
+
+			if (data.period && data.period.since) {
+				const since = new Date(data.period.since);
+				const until = data.period.until ? new Date(data.period.until) : null;
+				periodEl.textContent = until
+					? `${since.toLocaleString()} → ${until.toLocaleString()}`
+					: `since ${since.toLocaleString()}`;
+			} else {
+				periodEl.textContent = '—';
+			}
+
+			const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+			if (warnings.length === 0) {
+				warningsEl.hidden = true;
+				warningsEl.innerHTML = '';
+			} else {
+				warningsEl.hidden = false;
+				warningsEl.innerHTML = '';
+				const note = document.createElement('div');
+				note.className = 'notice notice-warning inline';
+				warnings.forEach((w) => {
+					const p = document.createElement('p');
+					p.textContent = typeof w === 'string' ? w : (w.message || JSON.stringify(w));
+					note.appendChild(p);
+				});
+				warningsEl.appendChild(note);
+			}
+		}
+
+		async function load() {
+			notConfigured.hidden = true;
+			formEl.hidden = true;
+			loadingEl.hidden = false;
+			setStatus('');
+
+			const since = sinceEl.value || '';
+			const path = since ? `/chatbot/usage?since=${encodeURIComponent(since)}` : '/chatbot/usage';
+			const result = await apiCall('GET', path);
+			loadingEl.hidden = true;
+
+			if (!result.ok) {
+				if (result.error === 'not_configured') {
+					notConfigured.hidden = false;
+					return;
+				}
+				setStatus(errorMessage(result), 'error');
+				formEl.hidden = false;
+				return;
+			}
+
+			renderUsage(result.data || {});
+			formEl.hidden = false;
+		}
+
+		reloadBtn.addEventListener('click', load);
+		sinceEl.addEventListener('change', load);
+		panel.addEventListener('swwp:tab-activate', load);
+	}
+
 	$(function () {
 		initColorPickers();
 		initTabs();
 		initConnectionTab();
+		initChatbotTab();
+		initGeoTab();
+		initUsageTab();
 	});
 })(jQuery);
