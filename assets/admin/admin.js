@@ -50,6 +50,13 @@
 		return { ok: true, status: res.status, data: envelope };
 	}
 
+	// Coerce a maybe-array to an actual array. Defends against upstream
+	// shape drift or a parse glitch in the proxy layer — a single bad
+	// payload shouldn't blow up the admin page with a TypeError.
+	function toArray(maybe) {
+		return Array.isArray(maybe) ? maybe : [];
+	}
+
 	// Map an API error code → friendly user-facing message.
 	function errorMessage(result) {
 		if (!result || result.ok) return '';
@@ -243,7 +250,13 @@
 					picker.hidden = true;
 					return;
 				}
-				populatePicker(result.data.chatbots || [], result.data.chatbot_slug || '');
+				const chatbots = toArray(result.data && result.data.chatbots);
+				if (chatbots.length === 0) {
+					setStatus(STR.noChatbots, 'warning');
+					picker.hidden = true;
+					return;
+				}
+				populatePicker(chatbots, (result.data && result.data.chatbot_slug) || '');
 				setStatus('');
 			});
 		}
@@ -273,7 +286,7 @@
 					setStatus(errorMessage(result), 'error');
 					return;
 				}
-				const n = (result.data.chatbots || []).length;
+				const n = toArray(result.data && result.data.chatbots).length;
 				setStatus(`${STR.connectionOk} (${n} chatbot${n === 1 ? '' : 's'} visible.)`, 'success');
 			});
 		}

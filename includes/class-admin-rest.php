@@ -190,17 +190,7 @@ class Admin_REST {
 			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
 		}
 
-		$chatbots = is_array( $result['data'] ) ? $result['data'] : array();
-		// Upstream returns a bare array of { slug, name, ... }.
-		$summarised = array_map(
-			static function ( $chatbot ) {
-				return array(
-					'slug' => isset( $chatbot['slug'] ) ? (string) $chatbot['slug'] : '',
-					'name' => isset( $chatbot['name'] ) ? (string) $chatbot['name'] : '',
-				);
-			},
-			$chatbots
-		);
+		$summarised = $this->summarise_chatbots( $result['data'] );
 
 		if ( 1 === count( $summarised ) && '' !== $summarised[0]['slug'] ) {
 			update_option( OPT_CHATBOT_SLUG, $summarised[0]['slug'], false );
@@ -255,16 +245,7 @@ class Admin_REST {
 			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
 		}
 
-		$chatbots = is_array( $result['data'] ) ? $result['data'] : array();
-		$summarised = array_map(
-			static function ( $chatbot ) {
-				return array(
-					'slug' => isset( $chatbot['slug'] ) ? (string) $chatbot['slug'] : '',
-					'name' => isset( $chatbot['name'] ) ? (string) $chatbot['name'] : '',
-				);
-			},
-			$chatbots
-		);
+		$summarised = $this->summarise_chatbots( $result['data'] );
 
 		return rest_ensure_response(
 			array(
@@ -352,6 +333,36 @@ class Admin_REST {
 		}
 
 		return rest_ensure_response( $result['data'] );
+	}
+
+	/**
+	 * Reduce the upstream `GET /admin/chatbots` response down to the
+	 * `[ ['slug' => ..., 'name' => ...], ... ]` list the admin UI needs.
+	 *
+	 * The upstream response is `{ "chatbots": [ { slug, name, ... }, ... ] }`
+	 * (see api-admin.md). We defend against the bare-array shape too in
+	 * case that wrapper ever changes — and fall back to an empty list on
+	 * anything weirder so the UI never crashes on an unexpected payload.
+	 *
+	 * @param mixed $payload Decoded JSON body from the upstream response.
+	 *
+	 * @return list<array{slug:string,name:string}>
+	 */
+	private function summarise_chatbots( $payload ): array {
+		$list = is_array( $payload ) && isset( $payload['chatbots'] ) && is_array( $payload['chatbots'] )
+			? $payload['chatbots']
+			: array();
+
+		return array_values(
+			array_map(
+				static function ( $chatbot ) {
+					$slug = is_array( $chatbot ) && isset( $chatbot['slug'] ) ? (string) $chatbot['slug'] : '';
+					$name = is_array( $chatbot ) && isset( $chatbot['name'] ) ? (string) $chatbot['name'] : '';
+					return array( 'slug' => $slug, 'name' => $name );
+				},
+				$list
+			)
+		);
 	}
 
 	/**
