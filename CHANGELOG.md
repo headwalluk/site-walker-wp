@@ -11,7 +11,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [0.5.0] - unreleased
 
-M7 — Admin-area extension. New wp-admin tabs that hang off the upstream `/admin/chatbots/*` API, so merchants can manage the knobs that drive the M6 denial vocabulary (budget caps, geo policy, welcome message, persona) without shelling into the host and running `./bin/sw`. Server-side proxy: the account admin key is stored as a `wp_option` on the WP host and never reaches the browser.
+M7 — Admin-area extension (new wp-admin tabs over `/admin/chatbots/*`) and M8 — Admin mode (per-admin session minting via the upstream M21 `POST /admin/chatbots/{slug}/sessions` route). Same release because both ride on the same server-side proxy (`Admin_API_Client`) and the same account-admin key already stored on the WP host. The account admin key is never exposed to the browser in either flow.
+
+### Added (M8 — Admin mode)
+- New WP REST route `POST /wp-json/site-walker/v1/admin-session` — manage_options + nonce gated, forwards to upstream `POST /admin/chatbots/{slug}/sessions` via the existing `Admin_API_Client`. Returns the upstream `{ session_token, welcome_message, is_admin_mode: true }` envelope unchanged.
+- Widget container carries `data-is-logged-in="1"` when rendered for a logged-in `manage_options` user; `window.siteWalkerWP.adminSession` (admin-session URL + nonce) is localised only in that case.
+- Widget `boot()` and `ensureSession()` branch on admin mode: skip the probe (upstream skips every gate the probe tests for), mint via the WP backend on first launcher click, cache the admin token under a separate `localStorage` key (`site-walker-wp:<host>:admin-session-token`) so admin and customer sessions on the same browser don't clobber each other.
+- The upstream's `**Admin mode**\n\n` welcome-message prefix renders as bold via our existing assistant-message markdown formatter — visible in-message cue, no new widget chrome.
+
+### Added (M7 — Admin-area extension)
 
 ### Added
 - `Admin_API_Client` — thin PHP wrapper over `wp_remote_request` for the upstream `/admin/chatbots/*` surface. Returns a uniform `[ok, status, data | error, detail]` envelope; carries the bearer admin key on every request; never logs it.
