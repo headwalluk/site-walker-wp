@@ -7,8 +7,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Pending
-- Admin-side "test connection" button that pings the configured API URL from the browser.
 - Conversation reset affordance (clear `localStorage`, mint fresh session).
+
+## [0.5.0] - unreleased
+
+M7 — Admin-area extension. New wp-admin tabs that hang off the upstream `/admin/chatbots/*` API, so merchants can manage the knobs that drive the M6 denial vocabulary (budget caps, geo policy, welcome message, persona) without shelling into the host and running `./bin/sw`. Server-side proxy: the account admin key is stored as a `wp_option` on the WP host and never reaches the browser.
+
+### Added
+- `Admin_API_Client` — thin PHP wrapper over `wp_remote_request` for the upstream `/admin/chatbots/*` surface. Returns a uniform `[ok, status, data | error, detail]` envelope; carries the bearer admin key on every request; never logs it.
+- `Admin_REST` — WP REST routes under `/wp-json/site-walker/v1/admin/*` for the four new tabs. All gated on `manage_options` + WP REST cookie nonce. PATCH bodies whitelist their allowed fields so an admin can't piggy-back un-exposed fields like `model_slug` through the proxy.
+- **Connection tab.** API URL, account admin key (password input on first save, masked-to-last-4 thereafter with Clear / Replace buttons), auto-discovered chatbot slug (single chatbot → auto-save; multi → picker dropdown; zero → friendly message). Test-connection button.
+- **Chatbot tab.** Welcome message, persona, daily / session budget caps (USD), soft-handoff threshold percent. Fetch-on-tab-open, PATCH on save. Empty-string textarea fields are translated to `null` on the way to the API so a clear-and-save actually clears the upstream field.
+- **Geo tab.** Mode (`allowall` / `blocklist` / `allowlist`) as a radio group; countries as a freeform textarea (comma / whitespace / newline separated, normalised to uppercase ISO 3166-1 alpha-2). A chip-input picker is on the v2 list.
+- **Usage tab.** Read-only spend display with a `since` selector (1h / 24h / 7d / 30d / all time). Renders any operator-actionable warnings (e.g. under-counting on NULL-priced models) inline.
+- New design doc: `dev-notes/40-admin-area-extension.md` covers the medium-cut scope, architecture, storage model, auto-discover flow, error model, and what's intentionally deferred.
+
+### Changed
+- General tab renamed to **Widget** — the only Settings-API-driven knobs that remain there are the widget render options. The API URL field moved to the new Connection tab and is now REST-managed (not registered via the Settings API).
+- Tab page restructured to host two tab families: Settings-API-driven (Widget, Appearance) wrapped in the shared `options.php` form, and REST-driven (Connection, Chatbot, Geo, Usage) each loading from its own partial under `admin-templates/tabs/`. The shared submit button now only shows when a Settings-API tab is active.
+- Tab switching dispatches a `swwp:tab-activate` custom event so each REST-driven tab can refetch on display.
+
+### Notes
+- **What's deliberately out of scope** (each tracked under "Later" in the project tracker): origins management UI, BYO provider API key setting, model swap, system blocks CRUD, account-level provisioning. Each was excluded for a stated reason (credential handling, blast-radius, or "wants its own UX") rather than time pressure.
 
 ## [0.4.0] - unreleased
 
