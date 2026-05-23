@@ -28,6 +28,7 @@ const OPT_ICON             = 'site_walker_wp_icon';
 const OPT_HEADER_TEXT      = 'site_walker_wp_header_text';
 const OPT_PLACEHOLDER_TEXT = 'site_walker_wp_placeholder_text';
 const OPT_ENABLED          = 'site_walker_wp_enabled';
+const OPT_TRUSTED_HOSTS    = 'site_walker_wp_trusted_hosts'; // array<string>; hosts whose URLs in assistant replies become clickable
 
 // Admin-area connection state — set via REST, never via the Settings API.
 // Both are autoload=no (set at update_option time) since they only matter on
@@ -46,6 +47,7 @@ const DEF_ACCENT_COLOR     = '#2563eb';
 const DEF_ICON             = 'chat';
 const DEF_HEADER_TEXT      = 'Chat';
 const DEF_PLACEHOLDER_TEXT = 'Type a message…';
+const DEF_TRUSTED_HOSTS    = array();
 
 // Position choices.
 const POSITION_CHOICES = array(

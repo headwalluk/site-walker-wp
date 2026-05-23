@@ -28,8 +28,51 @@ class Settings {
 		$this->register_option( OPT_ICON, 'string', DEF_ICON, array( $this, 'sanitize_icon' ) );
 		$this->register_option( OPT_HEADER_TEXT, 'string', DEF_HEADER_TEXT, 'sanitize_text_field' );
 		$this->register_option( OPT_PLACEHOLDER_TEXT, 'string', DEF_PLACEHOLDER_TEXT, 'sanitize_text_field' );
+		$this->register_option( OPT_TRUSTED_HOSTS, 'array', DEF_TRUSTED_HOSTS, array( $this, 'sanitize_trusted_hosts' ) );
 
 		$this->register_sections_and_fields();
+	}
+
+	/**
+	 * Sanitise the trusted-hosts textarea. Accepts comma / whitespace /
+	 * newline separated hosts; returns a list<string> of lowercased,
+	 * de-duped, syntactically valid hostnames. Anything that doesn't look
+	 * like a host (has a slash, has a scheme, blank line, garbage) is
+	 * silently dropped — better to lose a typo than to embed `wa.me/foo`
+	 * as a "host" that never matches.
+	 *
+	 * @param mixed $value Raw value from the form (string) or programmatic
+	 *                     update (array).
+	 *
+	 * @return array<int, string>
+	 */
+	public function sanitize_trusted_hosts( $value ): array {
+		$candidates = array();
+		if ( is_string( $value ) ) {
+			$candidates = preg_split( '/[\s,]+/', $value, -1, PREG_SPLIT_NO_EMPTY );
+		} elseif ( is_array( $value ) ) {
+			$candidates = $value;
+		}
+
+		$clean = array();
+		foreach ( $candidates as $raw ) {
+			$host = is_string( $raw ) ? strtolower( trim( $raw ) ) : '';
+			if ( '' === $host ) {
+				continue;
+			}
+			// Drop anything that has a scheme or path baked in.
+			if ( false !== strpos( $host, '/' ) || false !== strpos( $host, ':' ) ) {
+				continue;
+			}
+			// Loose hostname check: at least one dot, lowercase alphanumerics
+			// + hyphen per label, no leading / trailing hyphens. IDNs are
+			// excluded for now; if a customer asks, accept punycode form.
+			if ( ! preg_match( '/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/', $host ) ) {
+				continue;
+			}
+			$clean[ $host ] = true; // dedupe via assoc keys
+		}
+		return array_keys( $clean );
 	}
 
 	/**
@@ -123,6 +166,8 @@ class Settings {
 
 		add_settings_field( OPT_ENABLED, __( 'Enable chat widget', 'site-walker' ), array( $this, 'render_field_enabled' ), ADMIN_PAGE_SLUG . '-widget', 'site_walker_wp_widget' );
 
+		add_settings_field( OPT_TRUSTED_HOSTS, __( 'Trusted external hosts', 'site-walker' ), array( $this, 'render_field_trusted_hosts' ), ADMIN_PAGE_SLUG . '-widget', 'site_walker_wp_widget' );
+
 		// Appearance section.
 		add_settings_section( 'site_walker_wp_appearance', __( 'Appearance', 'site-walker' ), '__return_false', ADMIN_PAGE_SLUG . '-appearance' );
 
@@ -192,6 +237,24 @@ class Settings {
 			esc_attr( OPT_ENABLED ),
 			checked( $value, true, false ),
 			esc_html__( 'Inject the chat widget on the front-end.', 'site-walker' )
+		);
+	}
+
+	public function render_field_trusted_hosts(): void {
+		$stored  = get_option( OPT_TRUSTED_HOSTS, DEF_TRUSTED_HOSTS );
+		$list    = is_array( $stored ) ? $stored : array();
+		$display = implode( "\n", $list );
+		printf(
+			'<textarea name="%1$s" rows="4" class="large-text code" placeholder="wa.me&#10;t.me&#10;calendly.com">%2$s</textarea>',
+			esc_attr( OPT_TRUSTED_HOSTS ),
+			esc_textarea( $display )
+		);
+		printf(
+			'<p class="description">%s</p>',
+			esc_html__(
+				"URLs in the assistant's replies that point to these hosts will be rendered as clickable links. One host per line. Same-site URLs (this WordPress site's host) are always clickable. Exact match only — 'example.com' does not match 'sub.example.com'; add the subdomain explicitly if you need it.",
+				'site-walker'
+			)
 		);
 	}
 

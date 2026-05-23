@@ -20,6 +20,11 @@ function get_plugin(): Plugin {
  * @return array<string, mixed>
  */
 function get_widget_config(): array {
+	$trusted_hosts = get_option( OPT_TRUSTED_HOSTS, DEF_TRUSTED_HOSTS );
+	if ( ! is_array( $trusted_hosts ) ) {
+		$trusted_hosts = array();
+	}
+
 	$config = array(
 		'enabled'         => (bool) filter_var( get_option( OPT_ENABLED, true ), FILTER_VALIDATE_BOOLEAN ),
 		'apiUrl'          => untrailingslashit( (string) get_option( OPT_API_URL, DEF_API_URL ) ),
@@ -36,6 +41,7 @@ function get_widget_config(): array {
 		'probeTtlMs'      => PROBE_AVAILABLE_TTL * 1000,
 		'maxMessageLen'   => MAX_MESSAGE_LENGTH,
 		'storagePrefix'   => 'site-walker-wp',
+		'trustedHosts'    => array_values( $trusted_hosts ),
 	);
 
 	return $config;
