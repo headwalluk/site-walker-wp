@@ -106,7 +106,7 @@ $has_slug = '' !== (string) get_option( OPT_CHATBOT_SLUG, '' );
 					<fieldset class="swwp-availability-mode">
 						<label>
 							<input type="radio" name="swwp-availability-mode" value="always" />
-							<?php esc_html_e( 'Always open', 'site-walker' ); ?>
+							<?php esc_html_e( 'Always online', 'site-walker' ); ?>
 						</label>
 						&nbsp;&nbsp;
 						<label>
@@ -117,7 +117,7 @@ $has_slug = '' !== (string) get_option( OPT_CHATBOT_SLUG, '' );
 					<div class="swwp-availability-grid" hidden>
 						<!-- populated by JS -->
 					</div>
-					<p class="description"><?php esc_html_e( 'Visitors landing outside the open windows see "We\'re closed until …"; sessions already in progress run past closing time. Use HH:MM 24-hour format; 24:00 is end-of-day. Times are in the chatbot\'s timezone (above).', 'site-walker' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Visitors landing outside the chatbot\'s online windows see a "We\'re unavailable until …" message; sessions already in progress run past the end of the window. Use HH:MM 24-hour format; 24:00 is end-of-day. Times are in the chatbot\'s timezone (above).', 'site-walker' ); ?></p>
 				</td>
 			</tr>
 		</table>

@@ -430,7 +430,7 @@
 		if (windowsEl.querySelector('.swwp-day-closed-marker')) return;
 		const m = document.createElement('span');
 		m.className = 'swwp-day-closed-marker swwp-muted';
-		m.textContent = '(closed)';
+		m.textContent = '(chatbot offline)';
 		windowsEl.appendChild(m);
 	}
 
