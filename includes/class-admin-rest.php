@@ -126,6 +126,50 @@ class Admin_REST {
 			)
 		);
 
+		// Sessions / messages — read-only browse over a chatbot's conversations.
+		// Proxies the upstream M22 routes; the visitor's session token is
+		// deliberately NOT in the response shape (sessions addressed by
+		// integer id), so there's no hijack risk in surfacing this to admins.
+		register_rest_route(
+			$ns,
+			'/' . $root . '/chatbot/sessions',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'sessions_list' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+				'args'                => array(
+					'page'      => array( 'type' => 'integer', 'required' => false ),
+					'page_size' => array( 'type' => 'integer', 'required' => false ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/' . $root . '/chatbot/sessions/(?P<id>\d+)',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'session_get' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+				'args'                => array(
+					'id' => array( 'type' => 'integer', 'required' => true ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/' . $root . '/chatbot/sessions/(?P<id>\d+)/messages',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'session_messages' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+				'args'                => array(
+					'id' => array( 'type' => 'integer', 'required' => true ),
+				),
+			)
+		);
+
 		// Admin-mode session mint — called by the front-end widget JS when a
 		// logged-in admin user loads a page. NOT under the /admin/* prefix
 		// because it's the only route in the namespace that's called from
@@ -311,6 +355,35 @@ class Admin_REST {
 		$since = is_string( $request['since'] ?? null ) ? (string) $request['since'] : '';
 		$query = '' === $since ? array() : array( 'since' => $since );
 		return $this->proxy_to_chatbot( 'GET', null, '/usage', $query );
+	}
+
+	// ---------------------------------------------------------------------
+	// Sessions / messages — M22 review surface
+	// ---------------------------------------------------------------------
+
+	public function sessions_list( \WP_REST_Request $request ) {
+		$page      = (int) ( $request['page'] ?? 0 );
+		$page_size = (int) ( $request['page_size'] ?? 0 );
+
+		$query = array();
+		if ( $page > 0 ) {
+			$query['page'] = $page;
+		}
+		if ( $page_size > 0 ) {
+			$query['page_size'] = $page_size;
+		}
+
+		return $this->proxy_to_chatbot( 'GET', null, '/sessions', $query );
+	}
+
+	public function session_get( \WP_REST_Request $request ) {
+		$id = (int) $request['id'];
+		return $this->proxy_to_chatbot( 'GET', null, '/sessions/' . $id );
+	}
+
+	public function session_messages( \WP_REST_Request $request ) {
+		$id = (int) $request['id'];
+		return $this->proxy_to_chatbot( 'GET', null, '/sessions/' . $id . '/messages' );
 	}
 
 	// ---------------------------------------------------------------------

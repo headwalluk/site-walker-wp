@@ -1,9 +1,9 @@
 # Project Tracker
 
 **Version:** 0.5.0
-**Last Updated:** 2026-05-23
-**Current Phase:** 0.5.0 just shipped — next: operational availability follow-up (M21 catch-up)
-**Overall Progress:** ~55% of "v1 shippable"
+**Last Updated:** 2026-05-24
+**Current Phase:** M9 — Session review (in progress)
+**Overall Progress:** ~60% of "v1 shippable"
 
 ---
 
@@ -18,10 +18,10 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 ## Active TODO Items
 
 ### In progress
-- _(nothing in flight — 0.5.0 just shipped)_
+- [ ] **M9 — Session review.** Surface the upstream M22 session/conversation-review routes in a new "Sessions" wp-admin tab. Paginated list of recent sessions with per-row aggregates (tokens, cost, badges for admin-mode / terminated) and a click-through to a detail view showing the full conversation. Hash-routed (`#sessions` for list, `#sessions/{id}` for detail) so browser back/forward work without page reloads. See M9 below.
 
 ### Next
-- [ ] **Operational availability — widget + settings (M21 catch-up follow-up).** Widget handling for `503 chatbot_closed` (hide widget + "opens at X" message, honour `Retry-After`); Chatbot tab gains `timezone` + `availability` fields; Usage tab surfaces the new `customer` / `admin` split. Natural M9 — see the entry under "Later" for the full scope.
+- [ ] **Operational availability — widget + settings (M21 catch-up follow-up).** Natural M10 — widget handling for `503 chatbot_closed` + Chatbot/Usage tab fields for the new schema columns. Full scope under "Later".
 - [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget).
 - [ ] Conversation reset affordance (clear `localStorage`, mint fresh session).
 
@@ -133,6 +133,24 @@ via /chat as usual
 - Chatbot tab fields for `timezone`, `availability`, `admin_session_budget_usd`.
 - Usage tab surfacing the new `customer` / `admin` spend split.
 - `PATCH /admin/chatbots/{slug}` whitelist expansion to allow the three new fields through. (Leave the whitelist tight until the UI exposes them.)
+
+### M9 — Session review (in progress)
+Surface the upstream M22 routes (`GET /admin/chatbots/{slug}/sessions[?page]`, `GET /admin/chatbots/{slug}/sessions/{id}`, `GET /admin/chatbots/{slug}/sessions/{id}/messages`) in a new **Sessions** wp-admin tab so operators can browse recent conversations and click through to read the full message history. The upstream surface is intentionally read-only and pagination-only for v1; filters (admin/customer segment, date range, has_email, terminated) are post-v1.0 upstream and inherit that deferral here.
+
+**Architecture (one paragraph):** new REST proxy routes in `Admin_REST` under `/wp-json/site-walker/v1/admin/chatbot/sessions[...]`, manage_options + nonce gated as elsewhere, calling upstream via the existing `Admin_API_Client`. New `admin-templates/tabs/sessions.php` with two containers (list + detail) shown alternately based on the URL hash; the existing tab nav extends to handle `#sessions/<id>` (tab name + sub-route).
+
+**Plugin work:**
+- [ ] **REST routes** — three GETs in `Admin_REST` proxying the M22 surface. Pagination + 100-page-size cap inherited from upstream.
+- [ ] **Sessions tab partial** — list and detail in a single panel, toggled by JS based on the hash sub-route. Stub when not configured, matching the other API-backed tabs.
+- [ ] **List view** — paginated table of session rows. Per-row: id (clickable), created/last-active timestamps (absolute, locale-formatted), message count, tokens in+out, cost estimate, badges for admin-mode and terminated sessions, `mailto:` link on captured visitor emails. Prev/next + "Page X of Y" at the bottom.
+- [ ] **Detail view** — header summary (timestamps, totals, badges, visitor email) plus alternating user/assistant message bubbles. Reuses the widget's assistant-message formatting logic so the admin sees what the visitor saw (bold, inline code, same-host + trusted-host link auto-linking).
+- [ ] **Hash routing extension** — tab activate parses `#sessions/<id>` to surface the sub-route to the Sessions panel; clicking a list row updates the hash; browser back/forward Just Work.
+
+**Explicitly out of scope** (matches what upstream chose not to expose in v1 or what we deferred for a separate pass):
+- Filters: admin/customer segment, date range, has_email, terminated — defer with upstream.
+- Per-message token / cost columns — upstream omits these (aggregates on the list row are deemed sufficient).
+- Conversation export (download as text/JSON) — easy follow-up if a customer asks.
+- Auto-refresh of the list — manual reload only; chat-review is not an active-monitoring tool.
 
 ---
 

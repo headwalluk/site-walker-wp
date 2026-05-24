@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added (M9 — Session review)
+- New **Sessions** wp-admin tab surfacing the upstream M22 review routes (`GET /admin/chatbots/{slug}/sessions[?page]`, `/sessions/{id}`, `/sessions/{id}/messages`). Paginated list of recent sessions with per-row aggregates (message count, tokens, cost estimate); `Admin mode` and `Terminated` pill badges where applicable; visitor email rendered as a `mailto:` link when the visitor volunteered one.
+- Click-through detail view shows the full ordered message history of one session as alternating user / assistant bubbles. Messages from the assistant render through the same markdown formatter the front-end widget uses (bold, inline code, same-host + trusted-host link auto-linking), so the admin sees what the visitor saw.
+- Hash-routed list ↔ detail: `#sessions` for the list, `#sessions/<id>` for one session. Browser back/forward work without a page reload. The tab nav extends to parse a sub-route from the hash and dispatch it to the active panel via `event.detail.sub` on `swwp:tab-activate`.
+- Three new REST proxy routes in `Admin_REST` (`GET /chatbot/sessions`, `/sessions/{id}`, `/sessions/{id}/messages`), gated on `manage_options` + WP REST nonce like the rest. The visitor's session bearer token is intentionally absent from upstream responses, so there's no hijack risk in surfacing this through the admin proxy.
+
 ### Pending
 - Conversation reset affordance (clear `localStorage`, mint fresh session).
 

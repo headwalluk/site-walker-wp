@@ -91,7 +91,20 @@
 			return;
 		}
 
-		function activate(name) {
+		// Parse the URL hash into a tab name + optional sub-route. For example
+		// `#sessions/412` → { tab: 'sessions', sub: '412' }. Tabs that don't
+		// use sub-routes (everything except Sessions today) simply ignore the
+		// sub value when they handle `swwp:tab-activate`.
+		function parseHash() {
+			const raw = window.location.hash.substring(1);
+			const [name, ...rest] = raw.split('/');
+			return {
+				tab: name || tabs[0].dataset.tab,
+				sub: rest.join('/') || null,
+			};
+		}
+
+		function activate(name, sub) {
 			tabs.forEach((tab) => {
 				tab.classList.toggle('nav-tab-active', tab.dataset.tab === name);
 			});
@@ -99,7 +112,7 @@
 				const visible = panel.dataset.panel === name;
 				panel.style.display = visible ? 'block' : 'none';
 				if (visible) {
-					panel.dispatchEvent(new CustomEvent('swwp:tab-activate'));
+					panel.dispatchEvent(new CustomEvent('swwp:tab-activate', { detail: { sub: sub || null } }));
 				}
 			});
 			if (submitBtn) {
@@ -107,19 +120,20 @@
 			}
 		}
 
-		const initial = window.location.hash.substring(1) || tabs[0].dataset.tab;
-		activate(initial);
+		const initial = parseHash();
+		activate(initial.tab, initial.sub);
 
 		tabs.forEach((tab) => {
 			tab.addEventListener('click', (e) => {
 				e.preventDefault();
 				window.location.hash = tab.dataset.tab;
-				activate(tab.dataset.tab);
+				activate(tab.dataset.tab, null);
 			});
 		});
 
 		window.addEventListener('hashchange', () => {
-			activate(window.location.hash.substring(1) || tabs[0].dataset.tab);
+			const { tab, sub } = parseHash();
+			activate(tab, sub);
 		});
 	}
 
@@ -584,6 +598,269 @@
 		panel.addEventListener('swwp:tab-activate', load);
 	}
 
+	// ---------------------------------------------------------------------
+	// Message-content formatter (Sessions tab)
+	//
+	// Renders assistant message bodies the same way the front-end widget
+	// does (markdown bold, inline code, same-host + trusted-host auto-
+	// linking). Deliberately a duplicate of widget.js's
+	// formatAssistantMessage rather than a shared module — see CLAUDE.md
+	// for why widget.js uses literal NUL bytes and how that turns the file
+	// binary-as-far-as-git-is-concerned. We use a verbose ASCII sentinel
+	// here instead so admin.js stays a normal text file. If you change one
+	// formatter, update both (the contract is small and stable; the
+	// duplication cost is real but bounded).
+	// ---------------------------------------------------------------------
+	function escapeMessageHtml(s) {
+		return s
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
+
+	function formatMessageBody(raw, role) {
+		if (typeof raw !== 'string') return '';
+		if (role !== 'assistant') return escapeMessageHtml(raw);
+
+		const trusted = new Set(Array.isArray(config.trustedHosts) ? config.trustedHosts : []);
+		const urlPattern = /https?:\/\/[^\s<>"')]+/g;
+		const placeholders = [];
+
+		const withPlaceholders = raw.replace(urlPattern, (match) => {
+			const trailingMatch = match.match(/[.,;:!?)\]]+$/);
+			const trailing = trailingMatch ? trailingMatch[0] : '';
+			const url = trailing ? match.slice(0, -trailing.length) : match;
+
+			let parsed;
+			try { parsed = new URL(url); } catch (e) { return match; }
+
+			const isSameHost = parsed.host === window.location.host;
+			const isTrustedExternal = trusted.has(parsed.host);
+			if (!isSameHost && !isTrustedExternal) return match;
+
+			const extraAttrs = isSameHost
+				? ''
+				: ' target="_blank" rel="noopener noreferrer nofollow"';
+			const idx = placeholders.length;
+			placeholders.push(
+				`<a href="${escapeMessageHtml(parsed.href)}"${extraAttrs}>${escapeMessageHtml(url)}</a>`
+			);
+			return `__SWWPLINK${idx}__`;
+		});
+
+		let html = escapeMessageHtml(withPlaceholders);
+		html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+		html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+		html = html.replace(/__SWWPLINK(\d+)__/g, (_, i) => placeholders[Number(i)]);
+		return html;
+	}
+
+	// ---------------------------------------------------------------------
+	// Sessions tab — list + detail
+	// ---------------------------------------------------------------------
+	function initSessionsTab() {
+		const panel = document.querySelector('#sessions-panel');
+		if (!panel) return;
+
+		const notConfigured  = panel.querySelector('.swwp-not-configured');
+		const loadingEl      = panel.querySelector('.swwp-tab-loading');
+		const listEl         = panel.querySelector('.swwp-sessions-list');
+		const detailEl       = panel.querySelector('.swwp-session-detail');
+		const rowsEl         = panel.querySelector('.swwp-sessions-rows');
+		const emptyEl        = panel.querySelector('.swwp-sessions-empty');
+		const reloadBtn      = panel.querySelector('.swwp-sessions-reload');
+		const prevBtn        = panel.querySelector('.swwp-sessions-prev');
+		const nextBtn        = panel.querySelector('.swwp-sessions-next');
+		const pageInfoEl     = panel.querySelector('.swwp-sessions-pageinfo');
+		const statusEl       = panel.querySelector('.swwp-status');
+		const summaryEl      = panel.querySelector('.swwp-session-summary');
+		const messagesEl     = panel.querySelector('.swwp-session-messages');
+
+		const PAGE_SIZE = 20;
+		let currentPage = 1;
+		let totalSessions = 0;
+
+		function setStatus(text, kind) {
+			statusEl.textContent = text || '';
+			statusEl.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		function showOnly(which) {
+			notConfigured.hidden = which !== 'notConfigured';
+			loadingEl.hidden     = which !== 'loading';
+			listEl.hidden        = which !== 'list';
+			detailEl.hidden      = which !== 'detail';
+		}
+
+		function formatTs(iso) {
+			if (!iso) return '—';
+			try {
+				return new Date(iso).toLocaleString();
+			} catch (e) {
+				return iso;
+			}
+		}
+
+		function formatCost(n) {
+			if (typeof n !== 'number') return '—';
+			return '$' + (n < 1 ? n.toFixed(4) : n.toFixed(2));
+		}
+
+		function badgeHtml(text, kind) {
+			return `<span class="swwp-badge swwp-badge-${kind}">${escapeMessageHtml(text)}</span>`;
+		}
+
+		function renderRow(s) {
+			const tokens = (s.tokens_in || 0) + (s.tokens_out || 0);
+			const badges = [];
+			if (s.is_admin_mode) badges.push(badgeHtml('Admin mode', 'admin'));
+			if (s.terminated_at)  badges.push(badgeHtml('Terminated', 'terminated'));
+
+			const email = s.visitor_email
+				? `<a href="mailto:${escapeMessageHtml(s.visitor_email)}">${escapeMessageHtml(s.visitor_email)}</a>`
+				: '<span class="swwp-muted">—</span>';
+
+			const idLink = `<a href="#sessions/${s.id}" class="swwp-session-link">#${s.id}</a>`;
+
+			return `
+				<tr>
+					<td>${idLink}</td>
+					<td title="${escapeMessageHtml(s.last_active_at || '')}">${escapeMessageHtml(formatTs(s.last_active_at))}</td>
+					<td>${s.message_count || 0}</td>
+					<td>${tokens.toLocaleString()}</td>
+					<td>${escapeMessageHtml(formatCost(s.cost_usd_estimate))}</td>
+					<td>${email}</td>
+					<td>${badges.join(' ') || '<span class="swwp-muted">—</span>'}</td>
+				</tr>
+			`;
+		}
+
+		async function loadList(page) {
+			showOnly('loading');
+			setStatus('');
+			currentPage = Math.max(1, page || 1);
+
+			const result = await apiCall('GET', `/chatbot/sessions?page=${currentPage}&page_size=${PAGE_SIZE}`);
+
+			if (!result.ok) {
+				if (result.error === 'not_configured') {
+					showOnly('notConfigured');
+					return;
+				}
+				showOnly('list');
+				setStatus(errorMessage(result), 'error');
+				return;
+			}
+
+			const data = result.data || {};
+			const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+			totalSessions = typeof data.total === 'number' ? data.total : sessions.length;
+
+			rowsEl.innerHTML = sessions.map(renderRow).join('');
+			emptyEl.hidden = sessions.length > 0;
+
+			const totalPages = Math.max(1, Math.ceil(totalSessions / PAGE_SIZE));
+			pageInfoEl.textContent = `Page ${currentPage} of ${totalPages} (${totalSessions} total)`;
+			prevBtn.disabled = currentPage <= 1;
+			nextBtn.disabled = currentPage >= totalPages;
+
+			showOnly('list');
+		}
+
+		async function loadDetail(sessionId) {
+			showOnly('loading');
+			setStatus('');
+
+			// Fetch metadata + messages in parallel.
+			const [metaResult, messagesResult] = await Promise.all([
+				apiCall('GET', `/chatbot/sessions/${encodeURIComponent(sessionId)}`),
+				apiCall('GET', `/chatbot/sessions/${encodeURIComponent(sessionId)}/messages`),
+			]);
+
+			if (!metaResult.ok) {
+				if (metaResult.error === 'not_configured') {
+					showOnly('notConfigured');
+					return;
+				}
+				showOnly('detail');
+				summaryEl.innerHTML = `<p class="swwp-status is-error">${escapeMessageHtml(errorMessage(metaResult))}</p>`;
+				messagesEl.innerHTML = '';
+				return;
+			}
+
+			renderSummary(metaResult.data || {});
+
+			if (!messagesResult.ok) {
+				messagesEl.innerHTML = `<p class="swwp-status is-error">${escapeMessageHtml(errorMessage(messagesResult))}</p>`;
+			} else {
+				const msgs = (messagesResult.data && messagesResult.data.messages) || [];
+				renderMessages(Array.isArray(msgs) ? msgs : []);
+			}
+
+			showOnly('detail');
+		}
+
+		function renderSummary(s) {
+			const tokens = (s.tokens_in || 0) + (s.tokens_out || 0);
+			const badges = [];
+			if (s.is_admin_mode) badges.push(badgeHtml('Admin mode', 'admin'));
+			if (s.terminated_at)  badges.push(badgeHtml('Terminated', 'terminated'));
+
+			const email = s.visitor_email
+				? `<a href="mailto:${escapeMessageHtml(s.visitor_email)}">${escapeMessageHtml(s.visitor_email)}</a>`
+				: '—';
+
+			summaryEl.innerHTML = `
+				<h2>Session #${escapeMessageHtml(String(s.id || ''))} ${badges.join(' ')}</h2>
+				<dl class="swwp-session-meta">
+					<dt>Started</dt><dd>${escapeMessageHtml(formatTs(s.created_at))}</dd>
+					<dt>Last active</dt><dd>${escapeMessageHtml(formatTs(s.last_active_at))}</dd>
+					<dt>Terminated</dt><dd>${s.terminated_at ? escapeMessageHtml(formatTs(s.terminated_at)) : '—'}</dd>
+					<dt>Messages</dt><dd>${s.message_count || 0}</dd>
+					<dt>Tokens</dt><dd>${tokens.toLocaleString()} (${(s.tokens_in || 0).toLocaleString()} in / ${(s.tokens_out || 0).toLocaleString()} out)</dd>
+					<dt>Cost estimate</dt><dd>${escapeMessageHtml(formatCost(s.cost_usd_estimate))}</dd>
+					<dt>Visitor email</dt><dd>${email}</dd>
+				</dl>
+			`;
+		}
+
+		function renderMessages(messages) {
+			if (messages.length === 0) {
+				messagesEl.innerHTML = '<p class="swwp-muted">No messages in this session.</p>';
+				return;
+			}
+			messagesEl.innerHTML = messages.map((m) => {
+				const role = m.role === 'user' || m.role === 'assistant' ? m.role : 'system';
+				const body = formatMessageBody(String(m.content || ''), role);
+				const ts = formatTs(m.created_at);
+				return `
+					<div class="swwp-review-message swwp-review-message-${role}">
+						<div class="swwp-review-message-meta">${escapeMessageHtml(role)} — ${escapeMessageHtml(ts)}</div>
+						<div class="swwp-review-message-body">${body}</div>
+					</div>
+				`;
+			}).join('');
+		}
+
+		// React to tab-activate by inspecting the sub-route. With no sub, show
+		// the list (preserving the current page if we have one); with a sub,
+		// load that session's detail view.
+		panel.addEventListener('swwp:tab-activate', (e) => {
+			const sub = e.detail && e.detail.sub;
+			if (sub) {
+				loadDetail(sub);
+			} else {
+				loadList(currentPage);
+			}
+		});
+
+		reloadBtn.addEventListener('click', () => loadList(currentPage));
+		prevBtn.addEventListener('click', () => loadList(currentPage - 1));
+		nextBtn.addEventListener('click', () => loadList(currentPage + 1));
+	}
+
 	$(function () {
 		initColorPickers();
 		initTabs();
@@ -591,5 +868,6 @@
 		initChatbotTab();
 		initGeoTab();
 		initUsageTab();
+		initSessionsTab();
 	});
 })(jQuery);

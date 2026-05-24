@@ -23,6 +23,7 @@ $tabs = array(
 	'chatbot'    => __( 'Chatbot', 'site-walker' ),
 	'geo'        => __( 'Geo', 'site-walker' ),
 	'usage'      => __( 'Usage', 'site-walker' ),
+	'sessions'   => __( 'Sessions', 'site-walker' ),
 );
 
 // Tabs whose body is driven by the Settings API.
@@ -65,6 +66,7 @@ $rest_tabs = array(
 	'chatbot'    => 'chatbot.php',
 	'geo'        => 'geo.php',
 	'usage'      => 'usage.php',
+	'sessions'   => 'sessions.php',
 );
 
 foreach ( $rest_tabs as $slug => $partial ) {

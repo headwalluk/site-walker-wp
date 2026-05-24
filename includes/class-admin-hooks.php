@@ -58,10 +58,18 @@ class Admin_Hooks {
 
 		// REST config the admin JS needs to talk to /wp-json/site-walker/v1/admin/*.
 		// Nonce is the standard 'wp_rest' nonce — WP REST will accept it on X-WP-Nonce.
+		$trusted_hosts = get_option( OPT_TRUSTED_HOSTS, DEF_TRUSTED_HOSTS );
+		if ( ! is_array( $trusted_hosts ) ) {
+			$trusted_hosts = array();
+		}
+
 		$config = array(
-			'restRoot' => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
-			'nonce'    => wp_create_nonce( 'wp_rest' ),
-			'strings'  => array(
+			'restRoot'     => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
+			'nonce'        => wp_create_nonce( 'wp_rest' ),
+			// Same list the widget gets; lets the Sessions-tab message
+			// formatter render the same link auto-linking the visitor saw.
+			'trustedHosts' => array_values( $trusted_hosts ),
+			'strings'      => array(
 				'unexpectedError'   => __( 'Something went wrong. Please try again.', 'site-walker' ),
 				'bearerInvalid'     => __( 'Admin key not recognised. Check that it\'s the right key and hasn\'t been revoked.', 'site-walker' ),
 				'wrongScope'        => __( 'This is a provisioning key, not an account admin key. Mint one with `./bin/sw account add-admin-key`.', 'site-walker' ),
