@@ -151,7 +151,10 @@
 }
 
 .site-walker-wp-settings .swwp-window input[type="text"] {
-	width: 60px;
+	/* Sized in em so the field always fits HH:MM (5 chars, up to 24:00)
+	   regardless of the host theme's base font size. 6em covers the chars
+	   plus default input padding without leaving slack. */
+	width: 6em;
 	font-family: inherit;
 	text-align: center;
 }
