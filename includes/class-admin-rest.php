@@ -55,19 +55,6 @@ class Admin_REST {
 
 		register_rest_route(
 			$ns,
-			'/' . $root . '/connection/slug',
-			array(
-				'methods'             => 'POST',
-				'callback'            => array( $this, 'connection_slug_post' ),
-				'permission_callback' => array( $this, 'can_manage' ),
-				'args'                => array(
-					'slug' => array( 'type' => 'string', 'required' => true ),
-				),
-			)
-		);
-
-		register_rest_route(
-			$ns,
 			'/' . $root . '/connection/test',
 			array(
 				'methods'             => 'POST',
@@ -207,10 +194,11 @@ class Admin_REST {
 
 		return rest_ensure_response(
 			array(
-				'api_url'        => $api_url,
-				'admin_key_set'  => '' !== $key,
-				'admin_key_mask' => mask_admin_key( $key ),
-				'chatbot_slug'   => $slug,
+				'api_url'         => $api_url,
+				'admin_key_set'   => '' !== $key,
+				'admin_key_mask'  => mask_admin_key( $key ),
+				'chatbot_slug'    => $slug,
+				'expected_origin' => get_site_origin(),
 			)
 		);
 	}
@@ -237,12 +225,13 @@ class Admin_REST {
 		update_option( OPT_ADMIN_KEY, $key, false );
 		update_option( OPT_CHATBOT_SLUG, '', false );
 
-		// Auto-discover chatbots under the new key.
 		$client = get_admin_api_client();
 		if ( ! $client ) {
 			return $this->error_response( 500, 'unexpected', array( 'message' => 'Stored key but could not build API client.' ) );
 		}
 
+		// 1. Fetch every chatbot in the account so we can iterate their origin
+		//    allowlists.
 		$result = $client->get( '/admin/chatbots' );
 		if ( ! $result['ok'] ) {
 			// Don't clear the key on auth failure — let the operator inspect
@@ -250,17 +239,49 @@ class Admin_REST {
 			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
 		}
 
-		$summarised = $this->summarise_chatbots( $result['data'] );
+		$chatbots = $this->summarise_chatbots( $result['data'] );
+		$origin   = get_site_origin();
 
-		if ( 1 === count( $summarised ) && '' !== $summarised[0]['slug'] ) {
-			update_option( OPT_CHATBOT_SLUG, $summarised[0]['slug'], false );
+		if ( '' === $origin ) {
+			return $this->error_response( 500, 'unexpected', array( 'message' => 'Could not determine this site\'s origin from site_url().' ) );
 		}
+
+		// 2. For each chatbot, fetch origins and check whether this site's
+		//    origin is on its allowlist.
+		$matches = $this->match_chatbots_to_origin( $client, $chatbots, $origin );
+
+		// 3. Zero-match path — clearest user-facing error of the new flow.
+		//    Surface the full chatbot list so the operator can see what they
+		//    might need to add an origin to.
+		if ( 0 === count( $matches ) ) {
+			return $this->error_response(
+				404,
+				'no_origin_match',
+				array(
+					'message'            => sprintf(
+						"No chatbot in this account has %s on its origin allowlist.",
+						$origin
+					),
+					'expected_origin'    => $origin,
+					'available_chatbots' => $chatbots,
+				)
+			);
+		}
+
+		// 4. Single (or first-of-multiple) match. Multiple is unexpected
+		//    because origin uniqueness is enforced upstream, but we handle it
+		//    defensively and surface the list so the operator notices.
+		$picked = $matches[0]['slug'];
+		update_option( OPT_CHATBOT_SLUG, $picked, false );
 
 		return rest_ensure_response(
 			array(
-				'ok'           => true,
-				'chatbots'     => $summarised,
-				'chatbot_slug' => (string) get_option( OPT_CHATBOT_SLUG, '' ),
+				'ok'              => true,
+				'chatbot_slug'    => $picked,
+				'chatbot_name'    => $matches[0]['name'],
+				'expected_origin' => $origin,
+				'match_count'     => count( $matches ),
+				'matches'         => $matches, // operator-facing: surface ambiguity if any
 			)
 		);
 	}
@@ -272,27 +293,6 @@ class Admin_REST {
 		return rest_ensure_response( array( 'ok' => true ) );
 	}
 
-	public function connection_slug_post( \WP_REST_Request $request ) {
-		$slug = is_string( $request['slug'] ) ? trim( $request['slug'] ) : '';
-		if ( '' === $slug ) {
-			return $this->error_response( 400, 'validation_failed', array( 'message' => 'Slug is required.' ) );
-		}
-
-		// Verify the slug exists under the current admin key before saving it.
-		$client = get_admin_api_client();
-		if ( ! $client ) {
-			return $this->error_response( 412, 'not_configured', array( 'message' => 'Admin key not set.' ) );
-		}
-
-		$result = $client->get( '/admin/chatbots/' . rawurlencode( $slug ) );
-		if ( ! $result['ok'] ) {
-			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
-		}
-
-		update_option( OPT_CHATBOT_SLUG, $slug, false );
-		return rest_ensure_response( array( 'ok' => true, 'chatbot_slug' => $slug ) );
-	}
-
 	public function connection_test( \WP_REST_Request $request ) {
 		unset( $request );
 		$client = get_admin_api_client();
@@ -300,18 +300,41 @@ class Admin_REST {
 			return $this->error_response( 412, 'not_configured', array( 'message' => 'API URL and admin key must both be set.' ) );
 		}
 
+		$slug   = (string) get_option( OPT_CHATBOT_SLUG, '' );
+		$origin = get_site_origin();
+
+		// If a slug is saved, verify (a) the chatbot still exists under this
+		// key, and (b) this site's origin is still on its allowlist.
+		if ( '' !== $slug ) {
+			$origins_result = $client->get( '/admin/chatbots/' . rawurlencode( $slug ) . '/origins' );
+			if ( ! $origins_result['ok'] ) {
+				return $this->error_response( $origins_result['status'], $origins_result['error'], $origins_result['detail'] );
+			}
+
+			$origin_match = $this->origins_include( $origins_result['data'], $origin );
+
+			return rest_ensure_response(
+				array(
+					'ok'              => true,
+					'chatbot_slug'    => $slug,
+					'expected_origin' => $origin,
+					'origin_match'    => $origin_match,
+				)
+			);
+		}
+
+		// No slug saved — just confirm the key authenticates by listing chatbots.
 		$result = $client->get( '/admin/chatbots' );
 		if ( ! $result['ok'] ) {
 			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
 		}
 
-		$summarised = $this->summarise_chatbots( $result['data'] );
-
 		return rest_ensure_response(
 			array(
-				'ok'           => true,
-				'chatbots'     => $summarised,
-				'chatbot_slug' => (string) get_option( OPT_CHATBOT_SLUG, '' ),
+				'ok'              => true,
+				'chatbot_slug'    => '',
+				'expected_origin' => $origin,
+				'origin_match'    => false,
 			)
 		);
 	}
@@ -461,6 +484,65 @@ class Admin_REST {
 		}
 
 		return rest_ensure_response( $result['data'] );
+	}
+
+	/**
+	 * For each chatbot in `$chatbots`, fetch its origin allowlist and keep
+	 * only the chatbots whose allowlist contains `$site_origin`. Returns the
+	 * subset in the same `[ {slug, name}, ... ]` shape `summarise_chatbots`
+	 * produces.
+	 *
+	 * Per-chatbot fetch failures (a single chatbot's /origins call returning
+	 * an error) are silently skipped — that chatbot is simply not considered
+	 * a match. The alternative (abort the whole match) would leave the
+	 * operator with a worse error than "no chatbot matches" when one
+	 * specific chatbot has a transient upstream problem.
+	 *
+	 * @param Admin_API_Client                                $client
+	 * @param list<array{slug:string,name:string}>            $chatbots
+	 * @param string                                          $site_origin
+	 *
+	 * @return list<array{slug:string,name:string}>
+	 */
+	private function match_chatbots_to_origin( Admin_API_Client $client, array $chatbots, string $site_origin ): array {
+		$matches = array();
+		foreach ( $chatbots as $bot ) {
+			if ( empty( $bot['slug'] ) ) {
+				continue;
+			}
+			$result = $client->get( '/admin/chatbots/' . rawurlencode( $bot['slug'] ) . '/origins' );
+			if ( ! $result['ok'] ) {
+				continue;
+			}
+			if ( $this->origins_include( $result['data'], $site_origin ) ) {
+				$matches[] = $bot;
+			}
+		}
+		return $matches;
+	}
+
+	/**
+	 * Does the upstream `/origins` payload contain `$site_origin`? Upstream
+	 * envelope is `{origins: [{id, chatbot_id, origin, created_at}, ...]}`.
+	 * Defends against missing / malformed shapes so a single bad payload
+	 * doesn't crash the matcher.
+	 *
+	 * @param mixed  $payload
+	 * @param string $site_origin
+	 */
+	private function origins_include( $payload, string $site_origin ): bool {
+		if ( '' === $site_origin ) {
+			return false;
+		}
+		$list = is_array( $payload ) && isset( $payload['origins'] ) && is_array( $payload['origins'] )
+			? $payload['origins']
+			: array();
+		foreach ( $list as $entry ) {
+			if ( is_array( $entry ) && isset( $entry['origin'] ) && (string) $entry['origin'] === $site_origin ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

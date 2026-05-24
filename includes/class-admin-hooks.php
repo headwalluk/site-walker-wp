@@ -72,19 +72,25 @@ class Admin_Hooks {
 		$wp_tz_iana = ( '' !== $wp_tz && '+' !== $wp_tz[0] && '-' !== $wp_tz[0] ) ? $wp_tz : '';
 
 		$config = array(
-			'restRoot'     => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
-			'nonce'        => wp_create_nonce( 'wp_rest' ),
+			'restRoot'       => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
+			'nonce'          => wp_create_nonce( 'wp_rest' ),
 			// Same list the widget gets; lets the Sessions-tab message
 			// formatter render the same link auto-linking the visitor saw.
-			'trustedHosts' => array_values( $trusted_hosts ),
-			'wpTimezone'   => $wp_tz_iana, // empty string if not IANA-shaped
-			'strings'      => array(
+			'trustedHosts'   => array_values( $trusted_hosts ),
+			'wpTimezone'     => $wp_tz_iana, // empty string if not IANA-shaped
+			// This site's canonical origin, used by the Connection tab to
+			// surface the expected origin in informational + error UI.
+			'expectedOrigin' => get_site_origin(),
+			'strings'        => array(
 				'unexpectedError'   => __( 'Something went wrong. Please try again.', 'site-walker' ),
 				'bearerInvalid'     => __( 'Admin key not recognised. Check that it\'s the right key and hasn\'t been revoked.', 'site-walker' ),
 				'wrongScope'        => __( 'This is a provisioning key, not an account admin key. Mint one with `./bin/sw account add-admin-key`.', 'site-walker' ),
-				'notFound'          => __( 'No chatbot found with this slug. Pick a different one from Connection.', 'site-walker' ),
+				'notFound'          => __( 'No chatbot found with this slug.', 'site-walker' ),
 				'transportError'    => __( 'Couldn\'t reach the API server. Check the URL is correct and the server is up.', 'site-walker' ),
 				'noChatbots'        => __( 'Admin key works, but no chatbots were found for the account. Create one with `./bin/sw chatbot create`.', 'site-walker' ),
+				/* translators: %s: site origin like https://example.com */
+				'noOriginMatch'     => __( 'No chatbot in this account has %s on its origin allowlist. Add it upstream with: sw chatbot origins add <slug> %s', 'site-walker' ),
+				'originMismatch'    => __( 'The saved chatbot no longer lists this site as an allowed origin. Re-save your admin key to find the right chatbot, or add this origin upstream.', 'site-walker' ),
 				'connectionOk'      => __( 'Connection OK.', 'site-walker' ),
 				'savedAndConnected' => __( 'Saved. Connected to:', 'site-walker' ),
 				'saved'             => __( 'Saved.', 'site-walker' ),

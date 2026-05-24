@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added (Origin-scoped chatbot selection)
+- **Connection tab no longer lets the operator pick any chatbot in the account.** On admin-key save, the plugin now derives this site's canonical origin (scheme + lowercase host, default port stripped) from `site_url()`, fetches each chatbot's origin allowlist via the upstream `GET /admin/chatbots/{slug}/origins`, and auto-selects the one whose allowlist contains this URL. Removes a real footgun: an admin could previously pick a chatbot bound to a different site's origin and have admin-mode sessions silently route there (admin-mode bypasses origin checks upstream by design, so the misconfiguration didn't surface as an error).
+- **Friendly no-match path.** Zero-match returns a specific `no_origin_match` error naming the expected origin and the exact `sw chatbot origins add` command the operator needs to run. The available chatbot list is surfaced so the operator can see what's in the account.
+- **Test connection now verifies the origin link.** Previously it just confirmed the key authenticated and listed chatbots. Now it checks the saved chatbot's allowlist still contains this site's URL — surfaces drift if the allowlist gets edited upstream after setup.
+- New `get_site_origin()` helper in `functions-private.php` centralises the origin normalisation, used by both the REST layer and the localised admin JS config.
+- The Connection-tab UI now shows the expected origin as informational text so the operator knows what's being matched against. The "Active chatbot" row is informational only — no picker, no "Change" button.
+- Removed `POST /wp-json/site-walker/v1/admin/connection/slug` (the picker endpoint) — no longer reachable from the UI.
+
 ### Added (M10 — Operational availability + Usage split, API v0.17 M21 catch-up)
 - **Widget — `503 chatbot_closed` handling.** New `PROBE_CLOSED` probe state cached with `next_open_at` (or a 1h fallback when upstream gave no hint), so the widget stays hidden between probes and re-probes when the chatbot is due to open. Launcher-click during closed hours shows a polite "We're closed until …" message; sessions already minted aren't affected (gate is mint-only per the API contract).
 - **Chatbot tab — `timezone` field.** Plain text input for the IANA identifier (e.g. `Europe/London`); a "Use this site's timezone" button is offered when the WP host's `wp_timezone_string()` returns an IANA name (rather than a UTC offset).

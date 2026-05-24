@@ -18,6 +18,7 @@ $admin_key    = (string) get_option( OPT_ADMIN_KEY, '' );
 $chatbot_slug = (string) get_option( OPT_CHATBOT_SLUG, '' );
 $key_masked   = mask_admin_key( $admin_key );
 $key_is_set   = '' !== $admin_key;
+$site_origin  = get_site_origin();
 
 ?>
 <div class="swwp-connection">
@@ -79,9 +80,18 @@ $key_is_set   = '' !== $admin_key;
 
 	<h2><?php esc_html_e( 'Chatbot', 'site-walker' ); ?></h2>
 	<p class="description">
-		<?php esc_html_e( 'Auto-discovered after the admin key is saved. If the account has more than one chatbot, you\'ll be asked to pick which one this WordPress install manages.', 'site-walker' ); ?>
+		<?php esc_html_e( 'Auto-selected by matching this site\'s origin against each chatbot\'s allowlist. Each chatbot can only be managed from the WordPress install whose URL is on its origin allowlist — so there\'s nothing to pick here. If no match is found, the error message tells you what to add upstream.', 'site-walker' ); ?>
 	</p>
 	<table class="form-table" role="presentation">
+		<tr>
+			<th scope="row"><?php esc_html_e( 'This site\'s origin', 'site-walker' ); ?></th>
+			<td>
+				<code class="swwp-site-origin"><?php echo esc_html( $site_origin ); ?></code>
+				<p class="description">
+					<?php esc_html_e( 'Derived from site_url(). The chatbot whose origin allowlist contains this URL becomes the active chatbot.', 'site-walker' ); ?>
+				</p>
+			</td>
+		</tr>
 		<tr>
 			<th scope="row"><?php esc_html_e( 'Active chatbot', 'site-walker' ); ?></th>
 			<td>
@@ -94,15 +104,6 @@ $key_is_set   = '' !== $admin_key;
 					}
 					?>
 				</span>
-				<button type="button" class="button swwp-chatbot-picker-toggle" <?php echo '' === $admin_key ? 'hidden' : ''; ?>>
-					<?php esc_html_e( 'Change…', 'site-walker' ); ?>
-				</button>
-				<div class="swwp-chatbot-picker" hidden>
-					<select class="swwp-chatbot-select"></select>
-					<button type="button" class="button button-primary swwp-chatbot-save">
-						<?php esc_html_e( 'Use this chatbot', 'site-walker' ); ?>
-					</button>
-				</div>
 			</td>
 		</tr>
 		<tr>

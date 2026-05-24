@@ -144,62 +144,31 @@
 		const panel = document.querySelector('#connection-panel');
 		if (!panel) return;
 
-		const apiUrlInput  = panel.querySelector('#swwp-api-url');
-		const keyInput     = panel.querySelector('#swwp-admin-key');
-		const keySaveBtn   = panel.querySelector('.swwp-key-save');
-		const keyClearBtn  = panel.querySelector('.swwp-key-clear');
+		const apiUrlInput   = panel.querySelector('#swwp-api-url');
+		const keyInput      = panel.querySelector('#swwp-admin-key');
+		const keySaveBtn    = panel.querySelector('.swwp-key-save');
+		const keyClearBtn   = panel.querySelector('.swwp-key-clear');
 		const keyReplaceBtn = panel.querySelector('.swwp-key-replace');
-		const keyMaskEl    = panel.querySelector('.swwp-key-mask');
-		const keyRow       = panel.querySelector('.swwp-key-row');
-		const activeChatbot = panel.querySelector('.swwp-active-chatbot');
-		const pickerToggle = panel.querySelector('.swwp-chatbot-picker-toggle');
-		const picker       = panel.querySelector('.swwp-chatbot-picker');
-		const pickerSelect = panel.querySelector('.swwp-chatbot-select');
-		const pickerSave   = panel.querySelector('.swwp-chatbot-save');
-		const testBtn      = panel.querySelector('.swwp-connection-test');
-		const statusEl     = panel.querySelector('.swwp-status');
+		const testBtn       = panel.querySelector('.swwp-connection-test');
+		const statusEl      = panel.querySelector('.swwp-status');
 
 		function setStatus(text, kind) {
 			statusEl.textContent = text || '';
 			statusEl.className = 'swwp-status' + (kind ? ' is-' + kind : '');
 		}
 
-		function renderChatbot(slug) {
-			if (slug) {
-				activeChatbot.innerHTML = '';
-				const code = document.createElement('code');
-				code.textContent = slug;
-				activeChatbot.appendChild(code);
-				activeChatbot.dataset.slug = slug;
-				pickerToggle.hidden = false;
-				testBtn.hidden = false;
-			} else {
-				activeChatbot.textContent = STR.notConnected;
-				activeChatbot.dataset.slug = '';
-				pickerToggle.hidden = true;
-			}
-		}
-
-		function populatePicker(chatbots, currentSlug) {
-			pickerSelect.innerHTML = '';
-			chatbots.forEach((cb) => {
-				const opt = document.createElement('option');
-				opt.value = cb.slug;
-				opt.textContent = cb.name ? `${cb.name} (${cb.slug})` : cb.slug;
-				if (cb.slug === currentSlug) opt.selected = true;
-				pickerSelect.appendChild(opt);
-			});
-		}
-
 		// "Save & connect" — POST /connection with admin key (+ optional URL).
 		//
-		// On success we reload the page rather than mutating DOM state in
-		// place. The Connection tab has several pieces of UI whose presence
-		// vs. absence depends on whether a key is saved (the Clear / Replace
-		// buttons, the masked-key display, the picker toggle); rendering
-		// those from the server template on a fresh page load is much more
-		// robust than threading the transitions through JS. The flash of a
-		// page reload is a fine trade for a once-per-setup action.
+		// Upstream now does origin-scoped matching: it walks the chatbot list
+		// and picks the (single) chatbot whose origin allowlist contains this
+		// site's URL. Three response shapes the UI cares about:
+		//   - ok=true              → saved; reload to refresh server-rendered state
+		//   - error=no_origin_match → tell the operator what to add upstream
+		//   - any other error       → bubble up via errorMessage()
+		//
+		// We always reload on success rather than mutating DOM state — the
+		// masked key / Clear / Replace buttons are server-conditioned and
+		// threading the transition through JS is more error-prone than worth.
 		keySaveBtn.addEventListener('click', async () => {
 			const key = (keyInput.value || '').trim();
 			const apiUrl = (apiUrlInput.value || '').trim();
@@ -212,20 +181,23 @@
 
 			if (!result.ok) {
 				keySaveBtn.disabled = false;
-				setStatus(errorMessage(result), 'error');
+				if (result.error === 'no_origin_match') {
+					const detail = result.detail || {};
+					const origin = detail.expected_origin || config.expectedOrigin || '';
+					setStatus(STR.noOriginMatch.replace(/%s/g, origin), 'error');
+				} else {
+					setStatus(errorMessage(result), 'error');
+				}
 				return;
 			}
 
-			const chatbots = result.data.chatbots || [];
-			if (chatbots.length === 0) {
-				setStatus(STR.noChatbots, 'warning');
-			} else if (chatbots.length === 1) {
-				setStatus(STR.savedAndConnected + ' ' + (chatbots[0].name || chatbots[0].slug) + '. Reloading…', 'success');
-			} else {
-				setStatus('Connected — pick your chatbot after reload…', 'info');
-			}
+			const name = result.data.chatbot_name || result.data.chatbot_slug;
+			const matchCount = result.data.match_count || 1;
+			const msg = matchCount > 1
+				? `${STR.savedAndConnected} ${name} (warning: ${matchCount} chatbots matched this origin — picked the first). Reloading…`
+				: `${STR.savedAndConnected} ${name}. Reloading…`;
+			setStatus(msg, matchCount > 1 ? 'warning' : 'success');
 
-			// Tiny pause so the user sees the success message before reload.
 			setTimeout(() => window.location.reload(), 600);
 		});
 
@@ -253,45 +225,10 @@
 			});
 		}
 
-		// "Change…" — open the picker, refresh the list via /connection/test.
-		if (pickerToggle) {
-			pickerToggle.addEventListener('click', async () => {
-				picker.hidden = false;
-				setStatus('Loading chatbots…');
-				const result = await apiCall('POST', '/connection/test');
-				if (!result.ok) {
-					setStatus(errorMessage(result), 'error');
-					picker.hidden = true;
-					return;
-				}
-				const chatbots = toArray(result.data && result.data.chatbots);
-				if (chatbots.length === 0) {
-					setStatus(STR.noChatbots, 'warning');
-					picker.hidden = true;
-					return;
-				}
-				populatePicker(chatbots, (result.data && result.data.chatbot_slug) || '');
-				setStatus('');
-			});
-		}
-
-		// "Use this chatbot" — POST /connection/slug.
-		pickerSave.addEventListener('click', async () => {
-			const slug = pickerSelect.value;
-			if (!slug) return;
-			pickerSave.disabled = true;
-			const result = await apiCall('POST', '/connection/slug', { slug });
-			pickerSave.disabled = false;
-			if (!result.ok) {
-				setStatus(errorMessage(result), 'error');
-				return;
-			}
-			renderChatbot(slug);
-			picker.hidden = true;
-			setStatus(STR.saved, 'success');
-		});
-
-		// "Test connection".
+		// "Test connection" — verifies the key is still valid AND that the
+		// saved chatbot's origin allowlist still includes this site. The
+		// allowlist could be edited out from under us via ./bin/sw, so
+		// surfacing a mismatch here is a useful diagnostic.
 		if (testBtn) {
 			testBtn.addEventListener('click', async () => {
 				setStatus('Testing…');
@@ -300,8 +237,14 @@
 					setStatus(errorMessage(result), 'error');
 					return;
 				}
-				const n = toArray(result.data && result.data.chatbots).length;
-				setStatus(`${STR.connectionOk} (${n} chatbot${n === 1 ? '' : 's'} visible.)`, 'success');
+				const data = result.data || {};
+				if (data.chatbot_slug && data.origin_match) {
+					setStatus(`${STR.connectionOk} (${data.chatbot_slug} ⇄ ${data.expected_origin})`, 'success');
+				} else if (data.chatbot_slug && !data.origin_match) {
+					setStatus(STR.originMismatch, 'warning');
+				} else {
+					setStatus(STR.notConnected, 'warning');
+				}
 			});
 		}
 	}

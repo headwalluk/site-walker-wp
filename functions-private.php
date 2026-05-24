@@ -78,6 +78,38 @@ function get_admin_api_client(): ?Admin_API_Client {
 }
 
 /**
+ * Compute the canonical origin string for this WP install — scheme + lower-
+ * cased host (+ port only when non-default). Used to match against the
+ * upstream chatbot's origin allowlist, which normalises the same way ("Origins
+ * are normalised: lowercase host, no trailing slash, http:// and https:// are
+ * distinct" per the admin API docs).
+ *
+ * Returns an empty string only when site_url() is unparseable — shouldn't
+ * happen in a healthy WP install but worth a defensive fallback so callers
+ * never get a malformed origin downstream.
+ */
+function get_site_origin(): string {
+	$parts = wp_parse_url( site_url() );
+	if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+		return '';
+	}
+
+	$scheme = strtolower( $parts['scheme'] );
+	$host   = strtolower( $parts['host'] );
+	$origin = $scheme . '://' . $host;
+
+	if ( ! empty( $parts['port'] ) ) {
+		$port       = (int) $parts['port'];
+		$is_default = ( 'https' === $scheme && 443 === $port ) || ( 'http' === $scheme && 80 === $port );
+		if ( ! $is_default ) {
+			$origin .= ':' . $port;
+		}
+	}
+
+	return $origin;
+}
+
+/**
  * Mask an admin key for display — keep only the `sw_` prefix and the last 4
  * characters. e.g. `sw_AbCd…wxyz`.
  */

@@ -2,8 +2,8 @@
 
 **Version:** 0.5.0
 **Last Updated:** 2026-05-24
-**Current Phase:** Toward 1.0.0 (three items above the line below)
-**Overall Progress:** ~80% of "v1 shippable"
+**Current Phase:** Toward 1.0.0 (two items above the line below — origin-scoping just shipped)
+**Overall Progress:** ~85% of "v1 shippable"
 
 ---
 
@@ -23,11 +23,11 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 ### Required for 1.0.0
 - [ ] **Mobile + accessibility verification (user task).** Confirm the front-end widget works on phones (layout, tap targets, viewport behaviour) and meets baseline accessibility (focus trap when panel open, ESC to close, screen-reader-friendly labels on the launcher / close / send buttons). Drive from a real device + a screen-reader pass; tweak markup/CSS as gaps emerge.
 - [ ] **Soft / hard handoff — upstream force-trigger + plugin finishing touches.** Upstream API needs an admin-side way to force an early soft- or hard-handoff event on a session so we can exercise the front-end paths without burning real spend. Once that lands, finish the widget side: the upstream supports `POST /sessions/visitor-email`, and we already detect `session_terminated: true` (input locks), but there's no UI affordance for the visitor to actually leave their email after the model prompts for it. Add the email-capture form to the locked-input state. User drives the upstream change; plugin work follows.
-- [ ] **Origin-scoped chatbot selection.** Today the Connection tab lists every chatbot in the account and lets the operator pick — misleading, because each chatbot is bound to specific origins upstream and this WP install is one specific origin. On admin-key save, the plugin should fetch each chatbot's origins (`GET /admin/chatbots/{slug}/origins`) and auto-select the one whose allowlist contains `site_url('/')`. Single match: save the slug, no picker. Zero match: friendly error pointing the operator at `sw chatbot origins add <slug> <site-url>`. Multiple matches: shouldn't happen (one URL → one allowlist row) but pick the first and warn. Plain plugin-side filter — no upstream API change required, no `Referer` header gymnastics (we already advertise `home_url()` in the User-Agent). Possible future upstream optimisation: embed `origins` in the list response, or accept `?origin=<url>` to filter server-side.
 
 ### Done (shipped on `main`; pending next release tag)
 - [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`).
 - [x] **M10 — Operational availability.** Widget handles `503 chatbot_closed`; Chatbot tab gains `timezone` / `availability` (per-day grid) / `admin_session_budget_usd`; Usage tab surfaces the `customer` / `admin` spend split.
+- [x] **Origin-scoped chatbot selection.** Connection tab no longer offers a picker — it auto-selects the chatbot whose origin allowlist contains `site_url()`. Zero-match returns a specific `no_origin_match` error naming the `sw chatbot origins add` command the operator needs to run. Test-connection now verifies the saved chatbot's allowlist still contains this URL. Closes the real-world footgun where an operator could pick a chatbot bound to another site's origin and have admin-mode sessions silently route there.
 - [x] **UX polish (post-M10).** Em-sized text + budget inputs (was px). Chatbot-availability vocabulary throughout (`Always online` / `(chatbot offline)` / `We're unavailable until …`) instead of the store-idiom `open` / `closed`.
 
 ### Done (shipped in 0.5.0)
