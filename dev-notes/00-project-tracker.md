@@ -2,8 +2,8 @@
 
 **Version:** 0.5.0
 **Last Updated:** 2026-05-24
-**Current Phase:** M10 — Operational availability (in progress)
-**Overall Progress:** ~65% of "v1 shippable"
+**Current Phase:** Toward 1.0.0 (three items above the line below)
+**Overall Progress:** ~80% of "v1 shippable"
 
 ---
 
@@ -11,21 +11,24 @@
 
 WordPress plugin that injects a floating chat widget into the front-end and talks directly from the visitor's browser to a [Site Walker](https://site-walker.net) API instance. The widget uses `localStorage` and a cached reachability probe to keep network traffic to a minimum (avoid hammering the API and avoid round-trips on every page load).
 
-Settings are managed via a tabbed WP admin page (General / Appearance). All visual / positional configuration is colour-picker- and form-driven; no shortcodes or theme code required.
+Settings are managed via a tabbed WP admin page (Connection / Widget / Appearance / Chatbot / Geo / Usage / Sessions). All visual / positional configuration is colour-picker- and form-driven; no shortcodes or theme code required.
 
 ---
 
 ## Active TODO Items
 
 ### In progress
-- [ ] **M10 — Operational availability (M21 catch-up).** Widget handling for the new `503 chatbot_closed` denial + Chatbot tab gains `timezone` / `availability` / `admin_session_budget_usd` fields + Usage tab surfaces the new `customer` / `admin` spend split. Full design + work breakdown in the M10 section below.
+- _(M9 + M10 just landed on `main` — nothing in flight)_
 
-### Next
-- [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget).
-- [ ] Conversation reset affordance (clear `localStorage`, mint fresh session).
+### Required for 1.0.0
+- [ ] **Mobile + accessibility verification (user task).** Confirm the front-end widget works on phones (layout, tap targets, viewport behaviour) and meets baseline accessibility (focus trap when panel open, ESC to close, screen-reader-friendly labels on the launcher / close / send buttons). Drive from a real device + a screen-reader pass; tweak markup/CSS as gaps emerge.
+- [ ] **Soft / hard handoff — upstream force-trigger + plugin finishing touches.** Upstream API needs an admin-side way to force an early soft- or hard-handoff event on a session so we can exercise the front-end paths without burning real spend. Once that lands, finish the widget side: the upstream supports `POST /sessions/visitor-email`, and we already detect `session_terminated: true` (input locks), but there's no UI affordance for the visitor to actually leave their email after the model prompts for it. Add the email-capture form to the locked-input state. User drives the upstream change; plugin work follows.
+- [ ] **Origin-scoped chatbot selection.** Today the Connection tab lists every chatbot in the account and lets the operator pick — misleading, because each chatbot is bound to specific origins upstream and this WP install is one specific origin. On admin-key save, the plugin should fetch each chatbot's origins (`GET /admin/chatbots/{slug}/origins`) and auto-select the one whose allowlist contains `site_url('/')`. Single match: save the slug, no picker. Zero match: friendly error pointing the operator at `sw chatbot origins add <slug> <site-url>`. Multiple matches: shouldn't happen (one URL → one allowlist row) but pick the first and warn. Plain plugin-side filter — no upstream API change required, no `Referer` header gymnastics (we already advertise `home_url()` in the User-Agent). Possible future upstream optimisation: embed `origins` in the list response, or accept `?origin=<url>` to filter server-side.
 
-### Recently shipped (pending next release cut)
-- [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`). Shipped on `main` 2026-05-24; awaits release tag with M10.
+### Done (shipped on `main`; pending next release tag)
+- [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`).
+- [x] **M10 — Operational availability.** Widget handles `503 chatbot_closed`; Chatbot tab gains `timezone` / `availability` (per-day grid) / `admin_session_budget_usd`; Usage tab surfaces the `customer` / `admin` spend split.
+- [x] **UX polish (post-M10).** Em-sized text + budget inputs (was px). Chatbot-availability vocabulary throughout (`Always online` / `(chatbot offline)` / `We're unavailable until …`) instead of the store-idiom `open` / `closed`.
 
 ### Done (shipped in 0.5.0)
 - [x] **M6 — API v0.16 catch-up.** Widget handles `402 budget_exhausted_daily`, `403 geo_blocked`, and `200 { session_terminated: true }`. Terminology sweep ("website(s)" → "chatbot(s)"). Verified end-to-end on devx 2026-05-23.
@@ -33,17 +36,26 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 - [x] **M8 — Admin mode.** Logged-in admins get a WP-backend-proxied admin-mode session that bypasses operator-imposed gates upstream; account admin key stays server-side.
 - [x] **UX polish.** Trusted external hosts allowlist on the Widget tab (URLs to operator-curated hosts get linkified in assistant replies; same-host always linkified; everything else stays plain text). Textarea grew to 2 rows. New `CLAUDE.md` capturing the widget.js NUL-sentinel gotcha so future editors don't repeat the diagnostic.
 
-### Later (deferred to dedicated milestones)
-- [ ] **Soft-handoff email capture** — on `session_terminated: true`, swap the input row for a one-field form that POSTs `/sessions/visitor-email`. Deferred from M6 to keep the catch-up tight; revisit alongside the operator-controls work in M5.
-- [ ] **Origins management in wp-admin** — `POST/DELETE /admin/chatbots/{slug}/origins` from the Connection tab. Deferred from M7 (operators use `./bin/sw chatbot origins add` today).
-- [ ] **Provider API key setting in wp-admin** — `PATCH /admin/chatbots/{slug}/api-key`. Deferred from M7 (credential-handling escalation, wants its own design pass).
-- [ ] **Model swap in wp-admin** — `model_slug` PATCH. Deferred from M7 (wrong model breaks replies — risky knob for a non-technical merchant).
-- [ ] Abuse / rate-limit hardening: per-IP throttling on `POST /sessions`, simple bot detection (timing + honeypot), token-spend ceiling per visitor.
-- [ ] Theme override hook for `templates/` once we have any front-end PHP templates worth exposing.
-- [ ] **Integrations framework** — see [`10-integrations-architecture.md`](10-integrations-architecture.md).
-- [ ] **WooCommerce integration** — see [`11-integration-woocommerce.md`](11-integration-woocommerce.md).
-- [ ] **Independent Analytics integration** — see [`12-integration-independent-analytics.md`](12-integration-independent-analytics.md).
-- [ ] **System context blocks: admin CRUD + sync** — see [`20-system-blocks-api.md`](20-system-blocks-api.md). Upstream API routes need to be designed and built first.
+---
+
+**═══════════════ ↑ Required for 1.0.0  |  ↓ Post-1.0.0 ═══════════════**
+
+---
+
+### Polish (post-1.0.0)
+- [ ] Admin-side "test connection" button on the Connection tab (the "Refresh" button does the same round-trip; a labelled "test" cycle is friendlier).
+- [ ] Conversation reset affordance — clear `localStorage`, mint a fresh session. Useful for QA + for visitors who want to start over.
+
+### Deferred admin-area features (post-1.0.0)
+- [ ] **Origins management in wp-admin.** Now that the plugin auto-scopes to one chatbot, an "add/remove origins" affordance on the Connection tab is natural for multi-site setups. Lower priority since auto-scope handles the common case (one site, one origin).
+- [ ] **Provider API key setting in wp-admin** — `PATCH /admin/chatbots/{slug}/api-key`. Credential-handling escalation; wants its own design pass.
+- [ ] **Model swap in wp-admin** — `model_slug` PATCH. Risky knob for a non-technical merchant; wrong model breaks replies.
+- [ ] **System context blocks: admin CRUD + sync** — see [`20-system-blocks-api.md`](20-system-blocks-api.md).
+
+### Strategic future work (post-1.0.0)
+- [ ] **M4 — Integrations framework + WooCommerce + Independent Analytics.** The product pivot from "generic chatbot" to "WP/Woo-aware assistant" — the v2 differentiator. See [`10-integrations-architecture.md`](10-integrations-architecture.md), [`11-integration-woocommerce.md`](11-integration-woocommerce.md), [`12-integration-independent-analytics.md`](12-integration-independent-analytics.md).
+- [ ] **M2 — Abuse / rate-limit hardening.** Per-IP throttling on `POST /sessions`, simple bot detection (timing + honeypot), token-spend ceiling per visitor. Largely upstream concerns; the upstream M20 budget caps act as the effective spend ceiling today.
+- [ ] **Theme override hook for `templates/`** once we have any front-end PHP templates worth exposing.
 
 ---
 
@@ -147,22 +159,23 @@ Surface the upstream M22 routes (`GET /admin/chatbots/{slug}/sessions[?page]`, `
 - [x] **Detail view** — header summary (timestamps, totals, badges, visitor email) plus alternating user/assistant message bubbles. Reuses the widget's assistant-message formatting logic — duplicated into `admin.js` with an ASCII sentinel (`__SWWPLINK<n>__`) rather than the widget's NUL bytes so admin.js stays a normal text file (see [CLAUDE.md](../CLAUDE.md) for the NUL gotcha).
 - [x] **Hash routing extension** — tab activate parses `#sessions/<id>` to surface the sub-route to the Sessions panel via `event.detail.sub`; clicking a list row updates the hash; browser back/forward Just Work.
 
-### M10 — Operational availability (in progress)
-Catch the plugin up to upstream M21's operational-hours surface. Two distinct halves: the **widget** needs to handle the new `503 chatbot_closed` denial that fires when a visitor lands outside the chatbot's open hours, and the **wp-admin** needs the configuration knobs (`timezone`, `availability`, `admin_session_budget_usd`) so operators can set those hours without dropping into `./bin/sw`. Folding in the Usage tab's `customer` / `admin` spend split that also landed in M21 — same milestone because it's small and rides the same Chatbot row.
+### M10 — Operational availability ✅ (pending next release tag)
+Caught the plugin up to upstream M21's operational-hours surface. Two distinct halves: the **widget** handles the new `503 chatbot_closed` denial that fires when a visitor lands outside the chatbot's open hours, and the **wp-admin** got the configuration knobs (`timezone`, `availability`, `admin_session_budget_usd`) so operators can set those hours without dropping into `./bin/sw`. Folded in the Usage tab's `customer` / `admin` spend split that also landed in M21.
 
 **Plugin work:**
-- [ ] **`Admin_REST` whitelist expansion** — add `timezone`, `availability`, `admin_session_budget_usd` to `chatbot_patch`'s allowed-fields list so they can flow through the proxy.
-- [ ] **Localise WP site timezone** — `wp_timezone_string()` injected into the admin localised config (only when it's an IANA name, not a UTC offset) so the Chatbot tab can offer a "use this site's timezone" button.
-- [ ] **Chatbot tab — `timezone` field** — text input with a "Use this site's timezone" button. Plain text input rather than a 400-entry dropdown; validation happens upstream.
-- [ ] **Chatbot tab — `availability` per-day grid** — seven rows (Mon-Sun), each with 0..n `HH:MM-HH:MM` windows. Add / remove window buttons. JS serialises to `{schedule: {mon: ["09:00-17:00"], ...}}` on save; deserialises on load. Empty (no windows on any day) → `null` (always open). Client-side validates the same rules the upstream enforces (`HH:MM` format, `close > open`, `24:00` as end-of-day).
-- [ ] **Chatbot tab — `admin_session_budget_usd`** — number input mirroring `session_budget_usd` styling.
-- [ ] **Usage tab — customer / admin split** — the existing combined totals stay; add a secondary section with two sub-tables (or a side-by-side) for the new `customer` and `admin` sub-objects from the API response.
-- [ ] **Widget — `503 chatbot_closed` handling** — new `PROBE_CLOSED` probe state cached with `next_open_at` (or `Retry-After` fallback) so the next re-probe happens at the right time. Launcher-click during closed hours surfaces "We're closed until \<time\>". Sessions already minted are unaffected (gate is mint-only per the API contract).
+- [x] **`Admin_REST` whitelist expansion** — added `timezone`, `availability`, `admin_session_budget_usd` to `chatbot_patch`'s allowed-fields list.
+- [x] **Localise WP site timezone** — `wp_timezone_string()` injected into the admin localised config (only when it's an IANA name, not a UTC offset).
+- [x] **Chatbot tab — `timezone` field** — text input with a "Use this site's timezone" button.
+- [x] **Chatbot tab — `availability` per-day grid** — seven rows (Mon-Sun), each with 0..n `HH:MM-HH:MM` windows + add/remove buttons. JS serialises to `{schedule: {mon: ["09:00-17:00"], ...}}` on save; empty → `null` (always online).
+- [x] **Chatbot tab — `admin_session_budget_usd`** — number input.
+- [x] **Usage tab — customer / admin split** — three-column table layout (Combined / Customer / Admin mode).
+- [x] **Widget — `503 chatbot_closed` handling** — new `PROBE_CLOSED` probe state cached with `next_open_at`. Launcher-click during closed hours surfaces "We're unavailable until \<time\>".
+- [x] **UX post-pass** — em-sized HH:MM + USD budget inputs; chatbot-availability vocabulary (online/offline rather than open/closed).
 
-**Explicitly out of scope**:
-- Per-day overrides (public holidays, one-off closures). Upstream doesn't support them either; operators handle one-offs by editing the schedule on the day.
+**Explicitly out of scope** (deferred — none of these are 1.0.0 blockers):
+- Per-day overrides (public holidays, one-off closures). Upstream doesn't support them either.
 - Maintenance-mode kill switch (`chatbots.is_paused`). Separate upstream feature, not built yet.
-- Auto-detect timezone mismatch warnings ("your WP site's tz is X but the chatbot's is Y"). Easy follow-up if it's missed.
+- Auto-detect timezone mismatch warnings ("your WP site's tz is X but the chatbot's is Y").
 
 ---
 
