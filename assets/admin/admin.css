@@ -105,6 +105,16 @@
 	margin-bottom: 12px;
 }
 
+/* Chatbot tab — wider budget inputs ---------------------------------- */
+
+/* WP core's .small-text is pixel-sized (≈50px); too narrow for USD values
+   with two decimal places (let alone four). Em-size the budget caps so
+   they scale with the surrounding text and fit the full value. Selector
+   is data-field-suffix so any future *_budget_usd field inherits it. */
+.site-walker-wp-settings input[type="number"][data-field$="_budget_usd"] {
+	width: 8em;
+}
+
 /* Chatbot tab — availability grid ------------------------------------ */
 
 .site-walker-wp-settings .swwp-availability-mode {
