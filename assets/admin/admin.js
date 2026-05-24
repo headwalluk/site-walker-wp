@@ -349,6 +349,125 @@
 	// ---------------------------------------------------------------------
 	// Chatbot tab
 	// ---------------------------------------------------------------------
+	// ---------------------------------------------------------------------
+	// Schedule grid helpers (used by initChatbotTab for `availability`).
+	//
+	// Upstream JSON shape: { schedule: { mon: ["09:00-17:00"], ... } } or
+	// null for "always open". Missing or empty per-day arrays = closed.
+	// `24:00` is accepted as end-of-day; `close <= open` is rejected
+	// upstream — we do a client-side check too for a friendlier error.
+	// ---------------------------------------------------------------------
+
+	const DAYS = [
+		{ key: 'mon', label: 'Monday' },
+		{ key: 'tue', label: 'Tuesday' },
+		{ key: 'wed', label: 'Wednesday' },
+		{ key: 'thu', label: 'Thursday' },
+		{ key: 'fri', label: 'Friday' },
+		{ key: 'sat', label: 'Saturday' },
+		{ key: 'sun', label: 'Sunday' },
+	];
+
+	const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
+
+	function validWindow(open, close) {
+		if (!TIME_PATTERN.test(open) || !TIME_PATTERN.test(close)) return false;
+		// Convert HH:MM to minute count; 24:00 → 1440.
+		const toMin = (s) => {
+			const [h, m] = s.split(':').map(Number);
+			return h * 60 + m;
+		};
+		return toMin(close) > toMin(open);
+	}
+
+	function renderScheduleGrid(gridEl, schedule) {
+		const sched = (schedule && schedule.schedule) || {};
+		gridEl.innerHTML = '';
+		const table = document.createElement('table');
+		table.className = 'widefat swwp-availability-table';
+		const tbody = document.createElement('tbody');
+		DAYS.forEach(({ key, label }) => {
+			const row = document.createElement('tr');
+			row.dataset.day = key;
+			row.innerHTML = `
+				<th scope="row" class="swwp-day-label">${label}</th>
+				<td class="swwp-day-windows"></td>
+				<td class="swwp-day-actions">
+					<button type="button" class="button-link swwp-window-add">+ Add window</button>
+				</td>
+			`;
+			tbody.appendChild(row);
+			const windowsEl = row.querySelector('.swwp-day-windows');
+			const windows = Array.isArray(sched[key]) ? sched[key] : [];
+			windows.forEach((w) => addWindowRow(windowsEl, w));
+			if (windows.length === 0) {
+				markDayClosed(windowsEl);
+			}
+		});
+		table.appendChild(tbody);
+		gridEl.appendChild(table);
+	}
+
+	function addWindowRow(windowsEl, value) {
+		// Remove any "closed" marker first.
+		const closedMarker = windowsEl.querySelector('.swwp-day-closed-marker');
+		if (closedMarker) closedMarker.remove();
+
+		const [open, close] = (typeof value === 'string' ? value.split('-') : ['09:00', '17:00'])
+			.map((s) => (s || '').trim());
+		const span = document.createElement('span');
+		span.className = 'swwp-window';
+		span.innerHTML = `
+			<input type="text" class="swwp-window-open" maxlength="5" placeholder="HH:MM" value="${open || '09:00'}" />
+			<span class="swwp-window-dash">–</span>
+			<input type="text" class="swwp-window-close" maxlength="5" placeholder="HH:MM" value="${close || '17:00'}" />
+			<button type="button" class="button-link swwp-window-remove" aria-label="Remove window">×</button>
+		`;
+		windowsEl.appendChild(span);
+	}
+
+	function markDayClosed(windowsEl) {
+		if (windowsEl.querySelector('.swwp-day-closed-marker')) return;
+		const m = document.createElement('span');
+		m.className = 'swwp-day-closed-marker swwp-muted';
+		m.textContent = '(closed)';
+		windowsEl.appendChild(m);
+	}
+
+	// Read the grid back into the upstream shape. Returns null for "always
+	// open" (no day has any windows OR mode is `always`); returns the
+	// object otherwise. Throws on the first invalid window so the caller
+	// can surface a useful error.
+	function collectSchedule(gridEl, mode) {
+		if (mode === 'always') return null;
+
+		const out = {};
+		let anyWindows = false;
+		DAYS.forEach(({ key }) => {
+			const row = gridEl.querySelector(`tr[data-day="${key}"]`);
+			if (!row) return;
+			const windows = row.querySelectorAll('.swwp-window');
+			const list = [];
+			windows.forEach((w) => {
+				const open = w.querySelector('.swwp-window-open').value.trim();
+				const close = w.querySelector('.swwp-window-close').value.trim();
+				if (open === '' && close === '') return; // skip blank rows
+				if (!validWindow(open, close)) {
+					throw new Error(`Invalid window on ${key}: ${open || '?'}–${close || '?'}. Use HH:MM with close after open (24:00 is end-of-day).`);
+				}
+				list.push(`${open}-${close}`);
+				anyWindows = true;
+			});
+			if (list.length > 0) out[key] = list;
+		});
+
+		// No day got any windows — treat as "always open" rather than the
+		// (likely-unintended) "always closed" interpretation. UI sets the
+		// mode radio back to `always` so this is visible to the operator.
+		if (!anyWindows) return null;
+		return { schedule: out };
+	}
+
 	function initChatbotTab() {
 		const panel = document.querySelector('#chatbot-panel');
 		if (!panel) return;
@@ -359,6 +478,53 @@
 		const saveBtn       = panel.querySelector('.swwp-chatbot-save');
 		const reloadBtn     = panel.querySelector('.swwp-chatbot-reload');
 		const statusEl      = panel.querySelector('.swwp-status');
+		const tzInput       = panel.querySelector('#swwp-chatbot-tz');
+		const tzUseSiteBtn  = panel.querySelector('.swwp-tz-use-site');
+		const availGrid     = panel.querySelector('.swwp-availability-grid');
+		const availModeRadios = panel.querySelectorAll('input[name="swwp-availability-mode"]');
+
+		// Surface the "Use this site's timezone" button only when the WP host
+		// actually advertised an IANA zone (not a UTC offset).
+		if (tzUseSiteBtn && config.wpTimezone) {
+			tzUseSiteBtn.hidden = false;
+			tzUseSiteBtn.title = `Set to ${config.wpTimezone}`;
+			tzUseSiteBtn.textContent = `Use this site's timezone (${config.wpTimezone})`;
+			tzUseSiteBtn.addEventListener('click', () => {
+				tzInput.value = config.wpTimezone;
+			});
+		}
+
+		// Availability mode radios drive the grid's visibility. Switching to
+		// `always` doesn't wipe the grid content (so the operator can toggle
+		// back without losing edits); we just send `null` on save.
+		function setAvailabilityMode(mode) {
+			availModeRadios.forEach((r) => { r.checked = r.value === mode; });
+			availGrid.hidden = mode !== 'schedule';
+		}
+
+		availModeRadios.forEach((r) => {
+			r.addEventListener('change', () => setAvailabilityMode(r.value));
+		});
+
+		// Delegated handler for + / × buttons inside the grid.
+		availGrid.addEventListener('click', (e) => {
+			const addBtn = e.target.closest('.swwp-window-add');
+			const removeBtn = e.target.closest('.swwp-window-remove');
+			if (addBtn) {
+				const row = addBtn.closest('tr');
+				const windowsEl = row && row.querySelector('.swwp-day-windows');
+				if (windowsEl) addWindowRow(windowsEl);
+				return;
+			}
+			if (removeBtn) {
+				const win = removeBtn.closest('.swwp-window');
+				const windowsEl = win && win.parentElement;
+				if (win) win.remove();
+				if (windowsEl && !windowsEl.querySelector('.swwp-window')) {
+					markDayClosed(windowsEl);
+				}
+			}
+		});
 
 		function setStatus(text, kind) {
 			statusEl.textContent = text || '';
@@ -384,7 +550,13 @@
 				return;
 			}
 
-			populateFields(formEl, result.data || {});
+			const data = result.data || {};
+			populateFields(formEl, data);
+
+			// Availability + mode radio.
+			renderScheduleGrid(availGrid, data.availability);
+			setAvailabilityMode(data.availability ? 'schedule' : 'always');
+
 			formEl.hidden = false;
 		}
 
@@ -393,9 +565,22 @@
 			// Upstream treats null as "clear" for nullable string fields. An
 			// empty string is likely to be rejected as validation_failed, so
 			// translate empties on the way out.
-			['welcome_message', 'persona'].forEach((k) => {
+			['welcome_message', 'persona', 'timezone'].forEach((k) => {
 				if (body[k] === '') body[k] = null;
 			});
+
+			// Availability — selected mode determines whether we send `null`
+			// or the {schedule: {...}} object.
+			const mode = (panel.querySelector('input[name="swwp-availability-mode"]:checked') || {}).value || 'always';
+			let availability;
+			try {
+				availability = collectSchedule(availGrid, mode);
+			} catch (e) {
+				setStatus(e.message, 'error');
+				return;
+			}
+			body.availability = availability;
+
 			saveBtn.disabled = true;
 			setStatus('Saving…');
 			const result = await apiCall('PATCH', '/chatbot', body);
@@ -404,7 +589,10 @@
 				setStatus(errorMessage(result), 'error');
 				return;
 			}
-			populateFields(formEl, result.data || {});
+			const fresh = result.data || {};
+			populateFields(formEl, fresh);
+			renderScheduleGrid(availGrid, fresh.availability);
+			setAvailabilityMode(fresh.availability ? 'schedule' : 'always');
 			setStatus(STR.saved, 'success');
 		});
 
@@ -530,13 +718,24 @@
 
 		function renderUsage(data) {
 			data = data || {};
+			// Three segments per row: combined (top-level fields) + the
+			// nested customer / admin sub-objects (M21+). The cell knows
+			// which segment via data-segment; missing sub-objects render
+			// as 0 / '$0.00' rather than '—' so the table stays uniform.
+			const segments = {
+				combined: data,
+				customer: data.customer || {},
+				admin:    data.admin || {},
+			};
 			panel.querySelectorAll('.swwp-usage-value').forEach((cell) => {
 				const field = cell.dataset.field;
-				const value = data[field];
+				const segment = cell.dataset.segment || 'combined';
+				const source = segments[segment] || {};
+				const value = source[field];
 				if (field === 'cost_usd') {
-					cell.textContent = formatCost(value);
+					cell.textContent = formatCost(typeof value === 'number' ? value : 0);
 				} else {
-					cell.textContent = formatInt(value);
+					cell.textContent = formatInt(typeof value === 'number' ? value : 0);
 				}
 			});
 

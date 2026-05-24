@@ -59,34 +59,36 @@ $since_choices = array(
 		<div class="swwp-usage-warnings" hidden></div>
 
 		<table class="widefat striped swwp-usage-table">
+			<thead>
+				<tr>
+					<th></th>
+					<th><?php esc_html_e( 'Combined', 'site-walker' ); ?></th>
+					<th><?php esc_html_e( 'Customer', 'site-walker' ); ?> <span class="swwp-muted" title="<?php esc_attr_e( 'Counts toward the daily-cap budget.', 'site-walker' ); ?>">ⓘ</span></th>
+					<th><?php esc_html_e( 'Admin mode', 'site-walker' ); ?> <span class="swwp-muted" title="<?php esc_attr_e( 'Logged-in WP admin sessions; excluded from the daily-cap budget.', 'site-walker' ); ?>">ⓘ</span></th>
+				</tr>
+			</thead>
 			<tbody>
-				<tr>
-					<th><?php esc_html_e( 'Messages', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="message_count">—</td>
-				</tr>
-				<tr>
-					<th><?php esc_html_e( 'Cost (USD)', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="cost_usd">—</td>
-				</tr>
-				<tr>
-					<th><?php esc_html_e( 'Tokens — input', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="tokens_in">—</td>
-				</tr>
-				<tr>
-					<th><?php esc_html_e( 'Tokens — output', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="tokens_out">—</td>
-				</tr>
-				<tr>
-					<th><?php esc_html_e( 'Tokens — cache write', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="cache_creation_tokens">—</td>
-				</tr>
-				<tr>
-					<th><?php esc_html_e( 'Tokens — cache read', 'site-walker' ); ?></th>
-					<td class="swwp-usage-value" data-field="cache_read_tokens">—</td>
-				</tr>
+				<?php
+				$rows = array(
+					'message_count'         => __( 'Messages', 'site-walker' ),
+					'cost_usd'              => __( 'Cost (USD)', 'site-walker' ),
+					'tokens_in'             => __( 'Tokens — input', 'site-walker' ),
+					'tokens_out'            => __( 'Tokens — output', 'site-walker' ),
+					'cache_creation_tokens' => __( 'Tokens — cache write', 'site-walker' ),
+					'cache_read_tokens'     => __( 'Tokens — cache read', 'site-walker' ),
+				);
+				foreach ( $rows as $field => $label ) :
+					?>
+					<tr>
+						<th><?php echo esc_html( $label ); ?></th>
+						<td class="swwp-usage-value" data-field="<?php echo esc_attr( $field ); ?>" data-segment="combined">—</td>
+						<td class="swwp-usage-value" data-field="<?php echo esc_attr( $field ); ?>" data-segment="customer">—</td>
+						<td class="swwp-usage-value" data-field="<?php echo esc_attr( $field ); ?>" data-segment="admin">—</td>
+					</tr>
+				<?php endforeach; ?>
 				<tr>
 					<th><?php esc_html_e( 'Period', 'site-walker' ); ?></th>
-					<td class="swwp-usage-period">—</td>
+					<td class="swwp-usage-period" colspan="3">—</td>
 				</tr>
 			</tbody>
 		</table>

@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added (M10 — Operational availability + Usage split, API v0.17 M21 catch-up)
+- **Widget — `503 chatbot_closed` handling.** New `PROBE_CLOSED` probe state cached with `next_open_at` (or a 1h fallback when upstream gave no hint), so the widget stays hidden between probes and re-probes when the chatbot is due to open. Launcher-click during closed hours shows a polite "We're closed until …" message; sessions already minted aren't affected (gate is mint-only per the API contract).
+- **Chatbot tab — `timezone` field.** Plain text input for the IANA identifier (e.g. `Europe/London`); a "Use this site's timezone" button is offered when the WP host's `wp_timezone_string()` returns an IANA name (rather than a UTC offset).
+- **Chatbot tab — `availability` per-day grid.** Seven-day editor where each day holds 0..n `HH:MM–HH:MM` windows with `+` / `×` add / remove controls. Toggle between "Always open" (sends `null`) and "Per schedule" (sends `{schedule: {mon: [...], ...}}`). Client-side validates the same rules upstream enforces (`HH:MM` format, `close > open`, `24:00` as end-of-day).
+- **Chatbot tab — `admin_session_budget_usd`.** Number input mirroring `session_budget_usd`; separate per-conversation cap for admin-mode sessions.
+- **Usage tab — customer / admin split.** Existing rows expanded into three columns: Combined / Customer / Admin mode. Customer column is what counts toward the daily-cap budget; admin-mode column is excluded from that aggregate (matches the upstream segregation introduced in M21).
+- **`Admin_REST` PATCH whitelist** extended to allow `timezone`, `availability`, `admin_session_budget_usd` through.
+
 ### Added (M9 — Session review)
 - New **Sessions** wp-admin tab surfacing the upstream M22 review routes (`GET /admin/chatbots/{slug}/sessions[?page]`, `/sessions/{id}`, `/sessions/{id}/messages`). Paginated list of recent sessions with per-row aggregates (message count, tokens, cost estimate); `Admin mode` and `Terminated` pill badges where applicable; visitor email rendered as a `mailto:` link when the visitor volunteered one.
 - Click-through detail view shows the full ordered message history of one session as alternating user / assistant bubbles. Messages from the assistant render through the same markdown formatter the front-end widget uses (bold, inline code, same-host + trusted-host link auto-linking), so the admin sees what the visitor saw.

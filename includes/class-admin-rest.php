@@ -329,6 +329,8 @@ class Admin_REST {
 		$body = $this->whitelist_patch_body( $request->get_json_params() ?: array(), array(
 			'name', 'welcome_message', 'persona',
 			'daily_budget_usd', 'session_budget_usd', 'handoff_threshold_pct',
+			// M10 — operational availability + admin-mode session cap.
+			'timezone', 'availability', 'admin_session_budget_usd',
 		) );
 		return $this->proxy_to_chatbot( 'PATCH', $body );
 	}

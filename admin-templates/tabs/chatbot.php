@@ -79,6 +79,47 @@ $has_slug = '' !== (string) get_option( OPT_CHATBOT_SLUG, '' );
 					<p class="description"><?php esc_html_e( 'Percent of the session budget at which the assistant is nudged to ask for the visitor\'s email (soft handoff). Default 80. Only meaningful when a session budget cap is set.', 'site-walker' ); ?></p>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row">
+					<label for="swwp-chatbot-admin-session-budget"><?php esc_html_e( 'Admin-mode session budget cap (USD)', 'site-walker' ); ?></label>
+				</th>
+				<td>
+					<input type="number" id="swwp-chatbot-admin-session-budget" min="0" step="0.01" class="small-text" data-field="admin_session_budget_usd" />
+					<p class="description"><?php esc_html_e( 'Separate per-conversation cap for admin-mode sessions (logged-in WP admins). Leave blank for unbounded — admins are trusted by default.', 'site-walker' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">
+					<label for="swwp-chatbot-tz"><?php esc_html_e( 'Timezone', 'site-walker' ); ?></label>
+				</th>
+				<td>
+					<input type="text" id="swwp-chatbot-tz" class="regular-text code" placeholder="Europe/London" data-field="timezone" />
+					<button type="button" class="button swwp-tz-use-site" hidden>
+						<?php esc_html_e( 'Use this site\'s timezone', 'site-walker' ); ?>
+					</button>
+					<p class="description"><?php esc_html_e( 'IANA timezone identifier like Europe/London or America/New_York. Leave blank for UTC. Required if you want operational hours to mean local time.', 'site-walker' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Operational hours', 'site-walker' ); ?></th>
+				<td>
+					<fieldset class="swwp-availability-mode">
+						<label>
+							<input type="radio" name="swwp-availability-mode" value="always" />
+							<?php esc_html_e( 'Always open', 'site-walker' ); ?>
+						</label>
+						&nbsp;&nbsp;
+						<label>
+							<input type="radio" name="swwp-availability-mode" value="schedule" />
+							<?php esc_html_e( 'Per schedule', 'site-walker' ); ?>
+						</label>
+					</fieldset>
+					<div class="swwp-availability-grid" hidden>
+						<!-- populated by JS -->
+					</div>
+					<p class="description"><?php esc_html_e( 'Visitors landing outside the open windows see "We\'re closed until …"; sessions already in progress run past closing time. Use HH:MM 24-hour format; 24:00 is end-of-day. Times are in the chatbot\'s timezone (above).', 'site-walker' ); ?></p>
+				</td>
+			</tr>
 		</table>
 
 		<div class="swwp-tab-save">

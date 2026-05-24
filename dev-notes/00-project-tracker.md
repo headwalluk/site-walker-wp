@@ -2,8 +2,8 @@
 
 **Version:** 0.5.0
 **Last Updated:** 2026-05-24
-**Current Phase:** M9 — Session review (in progress)
-**Overall Progress:** ~60% of "v1 shippable"
+**Current Phase:** M10 — Operational availability (in progress)
+**Overall Progress:** ~65% of "v1 shippable"
 
 ---
 
@@ -18,12 +18,14 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 ## Active TODO Items
 
 ### In progress
-- [ ] **M9 — Session review.** Surface the upstream M22 session/conversation-review routes in a new "Sessions" wp-admin tab. Paginated list of recent sessions with per-row aggregates (tokens, cost, badges for admin-mode / terminated) and a click-through to a detail view showing the full conversation. Hash-routed (`#sessions` for list, `#sessions/{id}` for detail) so browser back/forward work without page reloads. See M9 below.
+- [ ] **M10 — Operational availability (M21 catch-up).** Widget handling for the new `503 chatbot_closed` denial + Chatbot tab gains `timezone` / `availability` / `admin_session_budget_usd` fields + Usage tab surfaces the new `customer` / `admin` spend split. Full design + work breakdown in the M10 section below.
 
 ### Next
-- [ ] **Operational availability — widget + settings (M21 catch-up follow-up).** Natural M10 — widget handling for `503 chatbot_closed` + Chatbot/Usage tab fields for the new schema columns. Full scope under "Later".
 - [ ] Add an admin-side "test connection" button that pings the configured API URL from the browser (not server-side — same origin model as the widget).
 - [ ] Conversation reset affordance (clear `localStorage`, mint fresh session).
+
+### Recently shipped (pending next release cut)
+- [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`). Shipped on `main` 2026-05-24; awaits release tag with M10.
 
 ### Done (shipped in 0.5.0)
 - [x] **M6 — API v0.16 catch-up.** Widget handles `402 budget_exhausted_daily`, `403 geo_blocked`, and `200 { session_terminated: true }`. Terminology sweep ("website(s)" → "chatbot(s)"). Verified end-to-end on devx 2026-05-23.
@@ -32,7 +34,6 @@ Settings are managed via a tabbed WP admin page (General / Appearance). All visu
 - [x] **UX polish.** Trusted external hosts allowlist on the Widget tab (URLs to operator-curated hosts get linkified in assistant replies; same-host always linkified; everything else stays plain text). Textarea grew to 2 rows. New `CLAUDE.md` capturing the widget.js NUL-sentinel gotcha so future editors don't repeat the diagnostic.
 
 ### Later (deferred to dedicated milestones)
-- [ ] **Operational availability — widget + settings (M21 catch-up follow-up).** Widget handling for `503 chatbot_closed` (hide widget + "opens at X" message, honour `Retry-After`); Chatbot tab gains `timezone` + `availability` fields; Usage tab surfaces the new `customer` / `admin` split. Deferred from M8 to keep the slim-cut admin-mode milestone tight.
 - [ ] **Soft-handoff email capture** — on `session_terminated: true`, swap the input row for a one-field form that POSTs `/sessions/visitor-email`. Deferred from M6 to keep the catch-up tight; revisit alongside the operator-controls work in M5.
 - [ ] **Origins management in wp-admin** — `POST/DELETE /admin/chatbots/{slug}/origins` from the Connection tab. Deferred from M7 (operators use `./bin/sw chatbot origins add` today).
 - [ ] **Provider API key setting in wp-admin** — `PATCH /admin/chatbots/{slug}/api-key`. Deferred from M7 (credential-handling escalation, wants its own design pass).
@@ -134,23 +135,34 @@ via /chat as usual
 - Usage tab surfacing the new `customer` / `admin` spend split.
 - `PATCH /admin/chatbots/{slug}` whitelist expansion to allow the three new fields through. (Leave the whitelist tight until the UI exposes them.)
 
-### M9 — Session review (in progress)
+### M9 — Session review ✅ (pending next release cut)
 Surface the upstream M22 routes (`GET /admin/chatbots/{slug}/sessions[?page]`, `GET /admin/chatbots/{slug}/sessions/{id}`, `GET /admin/chatbots/{slug}/sessions/{id}/messages`) in a new **Sessions** wp-admin tab so operators can browse recent conversations and click through to read the full message history. The upstream surface is intentionally read-only and pagination-only for v1; filters (admin/customer segment, date range, has_email, terminated) are post-v1.0 upstream and inherit that deferral here.
 
 **Architecture (one paragraph):** new REST proxy routes in `Admin_REST` under `/wp-json/site-walker/v1/admin/chatbot/sessions[...]`, manage_options + nonce gated as elsewhere, calling upstream via the existing `Admin_API_Client`. New `admin-templates/tabs/sessions.php` with two containers (list + detail) shown alternately based on the URL hash; the existing tab nav extends to handle `#sessions/<id>` (tab name + sub-route).
 
 **Plugin work:**
-- [ ] **REST routes** — three GETs in `Admin_REST` proxying the M22 surface. Pagination + 100-page-size cap inherited from upstream.
-- [ ] **Sessions tab partial** — list and detail in a single panel, toggled by JS based on the hash sub-route. Stub when not configured, matching the other API-backed tabs.
-- [ ] **List view** — paginated table of session rows. Per-row: id (clickable), created/last-active timestamps (absolute, locale-formatted), message count, tokens in+out, cost estimate, badges for admin-mode and terminated sessions, `mailto:` link on captured visitor emails. Prev/next + "Page X of Y" at the bottom.
-- [ ] **Detail view** — header summary (timestamps, totals, badges, visitor email) plus alternating user/assistant message bubbles. Reuses the widget's assistant-message formatting logic so the admin sees what the visitor saw (bold, inline code, same-host + trusted-host link auto-linking).
-- [ ] **Hash routing extension** — tab activate parses `#sessions/<id>` to surface the sub-route to the Sessions panel; clicking a list row updates the hash; browser back/forward Just Work.
+- [x] **REST routes** — three GETs in `Admin_REST` proxying the M22 surface. Pagination + 100-page-size cap inherited from upstream.
+- [x] **Sessions tab partial** — list and detail in a single panel, toggled by JS based on the hash sub-route. Stub when not configured, matching the other API-backed tabs.
+- [x] **List view** — paginated table of session rows. Per-row: id (clickable), last-active timestamp (absolute, locale-formatted), message count, tokens in+out, cost estimate, badges for admin-mode and terminated sessions, `mailto:` link on captured visitor emails. Prev/next + "Page X of Y (N total)" at the bottom.
+- [x] **Detail view** — header summary (timestamps, totals, badges, visitor email) plus alternating user/assistant message bubbles. Reuses the widget's assistant-message formatting logic — duplicated into `admin.js` with an ASCII sentinel (`__SWWPLINK<n>__`) rather than the widget's NUL bytes so admin.js stays a normal text file (see [CLAUDE.md](../CLAUDE.md) for the NUL gotcha).
+- [x] **Hash routing extension** — tab activate parses `#sessions/<id>` to surface the sub-route to the Sessions panel via `event.detail.sub`; clicking a list row updates the hash; browser back/forward Just Work.
 
-**Explicitly out of scope** (matches what upstream chose not to expose in v1 or what we deferred for a separate pass):
-- Filters: admin/customer segment, date range, has_email, terminated — defer with upstream.
-- Per-message token / cost columns — upstream omits these (aggregates on the list row are deemed sufficient).
-- Conversation export (download as text/JSON) — easy follow-up if a customer asks.
-- Auto-refresh of the list — manual reload only; chat-review is not an active-monitoring tool.
+### M10 — Operational availability (in progress)
+Catch the plugin up to upstream M21's operational-hours surface. Two distinct halves: the **widget** needs to handle the new `503 chatbot_closed` denial that fires when a visitor lands outside the chatbot's open hours, and the **wp-admin** needs the configuration knobs (`timezone`, `availability`, `admin_session_budget_usd`) so operators can set those hours without dropping into `./bin/sw`. Folding in the Usage tab's `customer` / `admin` spend split that also landed in M21 — same milestone because it's small and rides the same Chatbot row.
+
+**Plugin work:**
+- [ ] **`Admin_REST` whitelist expansion** — add `timezone`, `availability`, `admin_session_budget_usd` to `chatbot_patch`'s allowed-fields list so they can flow through the proxy.
+- [ ] **Localise WP site timezone** — `wp_timezone_string()` injected into the admin localised config (only when it's an IANA name, not a UTC offset) so the Chatbot tab can offer a "use this site's timezone" button.
+- [ ] **Chatbot tab — `timezone` field** — text input with a "Use this site's timezone" button. Plain text input rather than a 400-entry dropdown; validation happens upstream.
+- [ ] **Chatbot tab — `availability` per-day grid** — seven rows (Mon-Sun), each with 0..n `HH:MM-HH:MM` windows. Add / remove window buttons. JS serialises to `{schedule: {mon: ["09:00-17:00"], ...}}` on save; deserialises on load. Empty (no windows on any day) → `null` (always open). Client-side validates the same rules the upstream enforces (`HH:MM` format, `close > open`, `24:00` as end-of-day).
+- [ ] **Chatbot tab — `admin_session_budget_usd`** — number input mirroring `session_budget_usd` styling.
+- [ ] **Usage tab — customer / admin split** — the existing combined totals stay; add a secondary section with two sub-tables (or a side-by-side) for the new `customer` and `admin` sub-objects from the API response.
+- [ ] **Widget — `503 chatbot_closed` handling** — new `PROBE_CLOSED` probe state cached with `next_open_at` (or `Retry-After` fallback) so the next re-probe happens at the right time. Launcher-click during closed hours surfaces "We're closed until \<time\>". Sessions already minted are unaffected (gate is mint-only per the API contract).
+
+**Explicitly out of scope**:
+- Per-day overrides (public holidays, one-off closures). Upstream doesn't support them either; operators handle one-offs by editing the schedule on the day.
+- Maintenance-mode kill switch (`chatbots.is_paused`). Separate upstream feature, not built yet.
+- Auto-detect timezone mismatch warnings ("your WP site's tz is X but the chatbot's is Y"). Easy follow-up if it's missed.
 
 ---
 

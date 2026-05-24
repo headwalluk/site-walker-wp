@@ -105,6 +105,76 @@
 	margin-bottom: 12px;
 }
 
+/* Chatbot tab — availability grid ------------------------------------ */
+
+.site-walker-wp-settings .swwp-availability-mode {
+	margin-bottom: 8px;
+}
+
+.site-walker-wp-settings .swwp-availability-grid {
+	margin-bottom: 8px;
+}
+
+.site-walker-wp-settings .swwp-availability-table {
+	max-width: 600px;
+}
+
+.site-walker-wp-settings .swwp-availability-table th.swwp-day-label {
+	width: 120px;
+	font-weight: 600;
+	vertical-align: middle;
+}
+
+.site-walker-wp-settings .swwp-availability-table td.swwp-day-windows {
+	padding: 8px;
+}
+
+.site-walker-wp-settings .swwp-availability-table td.swwp-day-actions {
+	width: 130px;
+	white-space: nowrap;
+	text-align: right;
+	padding: 8px;
+	vertical-align: middle;
+}
+
+.site-walker-wp-settings .swwp-window {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 6px;
+	margin-right: 6px;
+	margin-bottom: 4px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	font-family: Menlo, Consolas, Monaco, monospace;
+}
+
+.site-walker-wp-settings .swwp-window input[type="text"] {
+	width: 60px;
+	font-family: inherit;
+	text-align: center;
+}
+
+.site-walker-wp-settings .swwp-window-dash {
+	color: #50575e;
+}
+
+.site-walker-wp-settings .swwp-window-remove {
+	color: #b32d2e;
+	font-size: 16px;
+	line-height: 1;
+	padding: 0 4px;
+}
+
+.site-walker-wp-settings .swwp-day-closed-marker {
+	font-style: italic;
+}
+
+.site-walker-wp-settings .swwp-tz-use-site {
+	margin-left: 6px;
+}
+
 /* Sessions tab ------------------------------------------------------- */
 
 .site-walker-wp-settings .swwp-sessions-controls {

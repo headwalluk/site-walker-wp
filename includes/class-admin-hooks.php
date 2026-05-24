@@ -63,12 +63,21 @@ class Admin_Hooks {
 			$trusted_hosts = array();
 		}
 
+		// WP site timezone, surfaced to the Chatbot tab for the "use this
+		// site's timezone" button. Only useful if it's an IANA identifier;
+		// `wp_timezone_string()` can also return a UTC offset like "+00:00"
+		// when the WP site is configured by offset rather than by zone, and
+		// the upstream API only accepts IANA names. Skip the offset case.
+		$wp_tz     = function_exists( 'wp_timezone_string' ) ? (string) wp_timezone_string() : '';
+		$wp_tz_iana = ( '' !== $wp_tz && '+' !== $wp_tz[0] && '-' !== $wp_tz[0] ) ? $wp_tz : '';
+
 		$config = array(
 			'restRoot'     => esc_url_raw( rest_url( ADMIN_REST_NAMESPACE . '/' . ADMIN_REST_ROOT ) ),
 			'nonce'        => wp_create_nonce( 'wp_rest' ),
 			// Same list the widget gets; lets the Sessions-tab message
 			// formatter render the same link auto-linking the visitor saw.
 			'trustedHosts' => array_values( $trusted_hosts ),
+			'wpTimezone'   => $wp_tz_iana, // empty string if not IANA-shaped
 			'strings'      => array(
 				'unexpectedError'   => __( 'Something went wrong. Please try again.', 'site-walker' ),
 				'bearerInvalid'     => __( 'Admin key not recognised. Check that it\'s the right key and hasn\'t been revoked.', 'site-walker' ),
