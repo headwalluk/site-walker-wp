@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added (GitHub-Releases auto-updater + release workflow)
+- New `Github_Updater` class (`includes/class-github-updater.php`) — imported from the Quick 2FA plugin and refactored for Site Walker namespacing / identifiers. Hooks into WP's `pre_set_site_transient_update_plugins` and `plugins_api` so new GitHub releases surface as standard plugin updates through the native WP UI. Polls `api.github.com/repos/<repo>/releases/latest` with a 1-hour transient cache. Operators can disable per-site via the `site_walker_updater_enabled` filter (default `true`).
+- New `.github/workflows/release.yml` — on every `v*.*.*` tag push, builds `site-walker-wp-<version>.zip` (versioned) and `site-walker-wp.zip` (stable filename), uploads both as workflow artifacts, and publishes them to GitHub Releases with auto-generated body text linking back to the CHANGELOG. The updater prefers the stable filename, falling back to any matching versioned zip if the stable one isn't present.
+- New constants: `UPDATER_GITHUB_REPO` (= `headwalluk/site-walker-wp`), `UPDATER_CACHE_KEY`, `UPDATER_CACHE_TTL`.
+- Tagging `v1.0.0` (and onward) is now the release mechanic — push the tag, the workflow does the rest. Existing 0.5.0 installs will pick up the update via the new updater on their next WP update cycle.
+
 ### Added (Hard-handoff email capture)
 - **Email capture form on `session_terminated: true`.** When the upstream M20 per-session hard cap fires (or the new M23.5 `SW_SIM_HARD_HANDOFF_AFTER_USER_TURNS` sim hook trips), the widget now swaps the locked input row for an email-capture form. Visitor types their address; widget POSTs to the upstream `POST /sessions/visitor-email`; on `204` the form is replaced with a "Thanks — we'll be in touch." confirmation. Form state persists across reloads via a per-host `localStorage` flag so already-submitted sessions don't see the form again.
 - Closes the hard-handoff loop end-to-end: the upstream's `handoff_webhook_url` (if configured) now fires with the visitor's email attached as the design intended.

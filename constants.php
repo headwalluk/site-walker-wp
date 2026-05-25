@@ -76,3 +76,11 @@ const ADMIN_REST_ROOT        = 'admin';
 
 // Account admin key shape — matches the upstream sw_ + 43 base64url chars.
 const ADMIN_KEY_REGEX        = '/^sw_[A-Za-z0-9_-]{43}$/';
+
+// GitHub-Releases auto-updater. Used by Github_Updater to poll for new
+// versions; release artifacts come from the `release.yml` workflow that
+// builds a `site-walker-wp.zip` (stable name) + a `site-walker-wp-<ver>.zip`
+// (versioned) on every `v*.*.*` tag push.
+const UPDATER_GITHUB_REPO    = 'headwalluk/site-walker-wp';
+const UPDATER_CACHE_KEY      = 'site_walker_wp_latest_release';
+const UPDATER_CACHE_TTL      = HOUR_IN_SECONDS; // 1h — at most one GitHub round-trip per WP update cycle.

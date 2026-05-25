@@ -1,0 +1,73 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          # Remove 'v' prefix from tag (v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Plugin version: ${VERSION}"
+
+      - name: Prepare plugin directory
+        run: |
+          mkdir -p build
+          rsync -av --exclude-from=.distignore ./ build/site-walker-wp/
+
+      - name: Build release zips
+        # Build the versioned zip once, then copy it to the generic
+        # filename so both artifacts are guaranteed byte-identical
+        # (same SHA256, just different filenames).
+        run: |
+          cd build
+          zip -r site-walker-wp-${{ steps.get_version.outputs.version }}.zip site-walker-wp/
+          cp site-walker-wp-${{ steps.get_version.outputs.version }}.zip site-walker-wp.zip
+          cd ..
+
+      - name: Upload versioned zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-walker-wp-${{ steps.get_version.outputs.version }}
+          path: build/site-walker-wp-${{ steps.get_version.outputs.version }}.zip
+
+      - name: Upload generic zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-walker-wp
+          path: build/site-walker-wp.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/site-walker-wp-${{ steps.get_version.outputs.version }}.zip
+            build/site-walker-wp.zip
+          body: |
+            **Site Walker v${{ steps.get_version.outputs.version }}**
+
+            Floating front-end chat widget for WordPress, talking directly to a [Site Walker](https://site-walker.net) API instance from the visitor's browser.
+
+            Download `site-walker-wp.zip` and install via WordPress admin (Plugins → Add New → Upload Plugin), or upload to your `wp-content/plugins/` directory.
+
+            Sites running a previous version will receive this update automatically via the in-plugin GitHub updater.
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full release notes.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -19,6 +19,8 @@ class Plugin {
 
 	private ?Admin_REST $admin_rest = null;
 
+	private ?Github_Updater $github_updater = null;
+
 	// Moved into run()
 	// public function __construct() {
 	// $this->settings = new Settings();
@@ -41,6 +43,12 @@ class Plugin {
 		// on manage_options — register them regardless of context so they're
 		// reachable from both admin XHRs and any internal callers.
 		add_action( 'rest_api_init', array( $this->get_admin_rest(), 'register_routes' ) );
+
+		// GitHub-Releases auto-updater. Hooks register in the constructor;
+		// instantiating it here is sufficient. Runs in all contexts so the
+		// WP cron-driven update transient picks up new versions whether the
+		// hit lands on a front-end or admin request.
+		$this->github_updater = new Github_Updater();
 
 		if ( is_admin() ) {
 			$admin_hooks = $this->get_admin_hooks();

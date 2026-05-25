@@ -42,6 +42,7 @@ require_once STWLK_PLUGIN_DIR . 'includes/class-settings.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-admin-hooks.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-admin-rest.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-public-hooks.php';
+require_once STWLK_PLUGIN_DIR . 'includes/class-github-updater.php';
 require_once STWLK_PLUGIN_DIR . 'includes/class-plugin.php';
 
 /**
