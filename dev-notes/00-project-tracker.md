@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.1.0
+**Version:** 1.1.1
 **Last Updated:** 2026-05-25
-**Current Phase:** 1.1.0 shipped (chat-text rendering polish) — next: remaining polish queue + M4 integrations
+**Current Phase:** 1.1.1 shipped (admin settings-page submit-button-on-wrong-tab fix) — next: remaining polish queue + M4 integrations
 **Overall Progress:** 100% of "v1 shippable"
 
 ---

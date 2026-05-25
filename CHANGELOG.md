@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 _(nothing yet)_
 
+## [1.1.1] - 2026-05-25
+
+Single-line patch: the shared "Save changes" button on the tabbed settings page is now actually hidden on tabs where it doesn't apply.
+
+### Fixed
+- The shared `<form action="options.php">` submit button (which only saves Widget and Appearance — the Settings-API-driven tabs) was rendering on every tab, even though `admin.js` already had a tab-activate handler that intended to hide it. The handler was a silent no-op: the `swwp-settings-submit` hook class was being passed through `submit_button()`'s `$other_attributes` array, which causes WP core to append a *second* `class="…"` attribute on the rendered `<input>`. Per the HTML spec, browsers keep only the first `class` attribute and drop the rest, so the hook class never landed on the element and `querySelector('.swwp-settings-submit')` returned `null`. Moved the class into the `$type` argument of `submit_button()` so WP merges it into the single primary `class="…"` it builds itself.
+- The toggle now hides the wrapping `<p class="submit">` element (via `closest('p.submit')`), not just the `<input>` inside it, so the REST-driven tabs (Connection / Chatbot / Geo / Usage / Sessions) no longer render an empty padding band where the button would have been.
+
 ## [1.1.0] - 2026-05-25
 
 Post-1.0.0 polish release focused on chat-text rendering: visitors no longer see literal `## Heading text` or `- bullet line` markdown leaking into the chat bubble, and the formatter has been consolidated into a single shared module consumed by both the widget and the Sessions admin tab.

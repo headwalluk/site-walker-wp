@@ -85,7 +85,11 @@
 	function initTabs() {
 		const tabs = document.querySelectorAll('.site-walker-wp-settings .nav-tab');
 		const panels = document.querySelectorAll('.site-walker-wp-settings .tab-panel');
-		const submitBtn = document.querySelector('.site-walker-wp-settings .swwp-settings-submit');
+		// Hide the wrapping <p class="submit"> (not just the <input>) so the
+		// REST-driven tabs don't render a tall empty band where the button
+		// would have been.
+		const submitInput = document.querySelector('.site-walker-wp-settings .swwp-settings-submit');
+		const submitWrap = submitInput ? submitInput.closest('p.submit') || submitInput : null;
 
 		if (!tabs.length || !panels.length) {
 			return;
@@ -115,8 +119,8 @@
 					panel.dispatchEvent(new CustomEvent('swwp:tab-activate', { detail: { sub: sub || null } }));
 				}
 			});
-			if (submitBtn) {
-				submitBtn.style.display = SETTINGS_API_TABS.has(name) ? '' : 'none';
+			if (submitWrap) {
+				submitWrap.style.display = SETTINGS_API_TABS.has(name) ? '' : 'none';
 			}
 		}
 

@@ -4,7 +4,7 @@ Tags: chat, chatbot, ai, llm, widget
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,9 @@ No. The widget calls the configured API URL directly from the visitor's browser.
 In the visitor's `localStorage`, keyed per API host so multiple widgets on the same browser don't collide. The token is opaque and tied to the website's origin allowlist on the API side.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fixed: shared "Save changes" button on the tabbed settings page is now hidden on the REST-driven tabs (Connection / Chatbot / Geo / Usage / Sessions). It only applies to Widget and Appearance — the toggle was in place but silently no-op'd because the hook class was being clipped from the rendered button by WP's `submit_button()` emitting a duplicate `class` attribute. Moved the class into the `$type` argument so WP merges it into the single primary class attribute it builds itself; also hides the wrapping `<p class="submit">` so the REST tabs don't render an empty padding band where the button would have been.
 
 = 1.1.0 =
 * Changed: chat-text rendering. Markdown headings (`#` / `##` / `###` collapse to `<h3>`), bullet lists (`- item`), ordered lists (`1. item`), and italic (`*em*` / `_em_`) now render as proper HTML elements in the chat bubble instead of leaking through as plain text. Existing bold, inline code, and same-origin / trusted-host auto-linking unchanged.
@@ -91,6 +94,9 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * Initial scaffold: settings page, front-end widget, three-state load flow (cached session → cached probe → fresh probe), session mint and chat turn handling.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Hides the shared "Save changes" button on tabs where it doesn't apply (Connection / Chatbot / Geo / Usage / Sessions). No DB changes; no setting changes; transparent upgrade.
 
 = 1.1.0 =
 Chat-text rendering tidy-up. Headings, bullet lists, ordered lists, italic, and markdown-syntax `[label](url)` links now render as proper HTML in the chat bubble instead of leaking through as `## Heading text` and `- bullet line` plain text. The formatter is now a single shared module across the front-end widget and the Sessions admin tab. No DB changes; no setting changes; transparent upgrade.

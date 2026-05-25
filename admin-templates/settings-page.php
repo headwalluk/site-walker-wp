@@ -54,7 +54,9 @@ foreach ( $settings_api_tabs as $slug ) {
 	printf( '</div>' );
 }
 
-submit_button( null, 'primary', 'submit', true, array( 'class' => 'button button-primary swwp-settings-submit' ) );
+// Class must be passed via $type — passing it through $other_attributes
+// emits a second class="..." attribute on the <input>, which browsers drop.
+submit_button( null, 'primary swwp-settings-submit', 'submit', true );
 
 printf( '</form>' );
 
