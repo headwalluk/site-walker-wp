@@ -6,7 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-_(nothing yet)_
+### Changed (widget email-capture UX)
+- The email-capture form is no longer always-visible alongside the chat input on terminated sessions. Replaced the always-on form + always-on thanks panel with a proper state machine:
+  - **Chat mode (default).** Chat input visible. A small "Request an email back" link sits below the input row as a voluntary affordance.
+  - **Email entry mode.** Triggered by either the CTA link (voluntary) or a `session_terminated: true` event (involuntary). Chat input hidden; email form visible; chat history stays visible above. No "back to chat" link during entry (per spec — back is for *after* a submission attempt).
+  - **Email result mode.** After Send is clicked, the response surfaces inline (success-green or error-red). Form is hidden on success; kept visible + re-enabled on error so the visitor can fix the address and retry. A "← Back to chat" link appears here, but **only** if the session is not terminated — on a hard handoff the chat is over and there's no chat to go back to.
+- Persistence is unchanged: a successful submission still sets `localStorage` so a reload of a terminated session shows the thanks state instead of the entry form again.
+- Removed `.swwp-email-thanks` markup + the corresponding `showEmailForm()` method, replaced by `.swwp-email-message` (used for both success and error states) and three explicit mode methods: `showChatMode()`, `showEmailEntry()`, `showEmailResult(message, kind)`. New `applyInitialUi()` helper centralises the terminated + emailSubmitted decision tree.
 
 ## [1.0.0] - 2026-05-25
 

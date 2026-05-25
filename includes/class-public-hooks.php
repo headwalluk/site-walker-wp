@@ -117,18 +117,34 @@ class Public_Hooks {
 			esc_attr__( 'Send message', 'site-walker' )
 		);
 
-		// Hard-handoff email capture (hidden until session_terminated fires
-		// — the widget swaps the input row for this form, posts the address
-		// to /sessions/visitor-email, then swaps in the thanks state).
+		// Voluntary "Request an email back" CTA. Visible when the chat is
+		// in normal mode (not terminated, not in email-entry); hidden by
+		// the widget JS when entering the email flow or when the session
+		// terminates. Default-visible so a visitor in plain chat mode sees
+		// the option without waiting for any async wiring.
 		$panel .= sprintf(
-			'<form class="swwp-email-row" autocomplete="email" hidden><input type="email" class="swwp-email-input" placeholder="%1$s" required maxlength="255" /><button type="submit" class="swwp-email-send button" aria-label="%2$s">&rarr;</button></form>',
+			'<div class="swwp-email-cta"><a href="#" class="swwp-email-cta-link">%s</a></div>',
+			esc_html__( 'Request an email back', 'site-walker' )
+		);
+
+		// Email-capture area — unified container for the entry form, a
+		// success/error message, and a back-to-chat link. Visibility of
+		// each child is driven by the widget's state machine (showChatMode
+		// / showEmailEntry / showEmailResult). Hidden by default; the
+		// widget reveals it when entering the email flow (either via the
+		// CTA above or via a session_terminated event).
+		$panel .= '<div class="swwp-email-area" hidden>';
+		$panel .= '<div class="swwp-email-message" hidden></div>';
+		$panel .= sprintf(
+			'<form class="swwp-email-row" autocomplete="email"><input type="email" class="swwp-email-input" placeholder="%1$s" required maxlength="255" /><button type="submit" class="swwp-email-send button" aria-label="%2$s">&rarr;</button></form>',
 			esc_attr__( 'Your email address', 'site-walker' ),
 			esc_attr__( 'Send email', 'site-walker' )
 		);
 		$panel .= sprintf(
-			'<div class="swwp-email-thanks" hidden>%s</div>',
-			esc_html__( 'Thanks — we\'ll be in touch.', 'site-walker' )
+			'<div class="swwp-email-back" hidden><a href="#" class="swwp-email-back-link">%s</a></div>',
+			esc_html__( '← Back to chat', 'site-walker' )
 		);
+		$panel .= '</div>';
 
 		$panel .= '</div>';
 

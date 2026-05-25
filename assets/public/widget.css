@@ -279,11 +279,60 @@
   filter: none;
 }
 
-.swwp-email-thanks {
-  padding: 14px;
+/* Voluntary "Request an email back" CTA — small, low-key link above
+   the input row. Hidden by JS when entering the email flow or when the
+   session terminates. */
+.swwp-email-cta {
+  padding: 6px 10px;
   text-align: center;
   border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.swwp-email-cta-link {
+  font-size: 12px;
+  color: #50575e;
+  text-decoration: underline;
+}
+
+.swwp-email-cta-link:hover,
+.swwp-email-cta-link:focus {
+  color: var(--swwp-accent);
+}
+
+/* Inline success / error message above the email form. JS toggles
+   `.is-success` / `.is-error` for colour cues. */
+.swwp-email-message {
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+}
+
+.swwp-email-message.is-success {
   background: #f0fdf4;
   color: #166534;
-  font-size: 13px;
+}
+
+.swwp-email-message.is-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* Back-to-chat link — shown only when the chat is not terminated. */
+.swwp-email-back {
+  padding: 6px 10px;
+  text-align: center;
+  background: #fff;
+}
+
+.swwp-email-back-link {
+  font-size: 12px;
+  color: #50575e;
+  text-decoration: underline;
+}
+
+.swwp-email-back-link:hover,
+.swwp-email-back-link:focus {
+  color: var(--swwp-accent);
 }

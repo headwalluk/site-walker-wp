@@ -44,6 +44,9 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 
 ---
 
+### Done after 1.0.0 (shipped on `main`; pending next release tag)
+- [x] **Email-capture UX state machine.** Replaced the always-visible-alongside-chat-input email form with a proper state machine: chat mode (default, with a small "Request an email back" CTA) → email entry (triggered by CTA or `session_terminated`) → email result (success or error with retry). Back-to-chat link only appears post-submission, and only when the session is not terminated.
+
 ### Polish (post-1.0.0)
 - [ ] Admin-side "test connection" button on the Connection tab (the "Refresh" button does the same round-trip; a labelled "test" cycle is friendlier).
 - [ ] Conversation reset affordance — clear `localStorage`, mint a fresh session. Useful for QA + for visitors who want to start over.
