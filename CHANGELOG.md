@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added (Hard-handoff email capture)
+- **Email capture form on `session_terminated: true`.** When the upstream M20 per-session hard cap fires (or the new M23.5 `SW_SIM_HARD_HANDOFF_AFTER_USER_TURNS` sim hook trips), the widget now swaps the locked input row for an email-capture form. Visitor types their address; widget POSTs to the upstream `POST /sessions/visitor-email`; on `204` the form is replaced with a "Thanks — we'll be in touch." confirmation. Form state persists across reloads via a per-host `localStorage` flag so already-submitted sessions don't see the form again.
+- Closes the hard-handoff loop end-to-end: the upstream's `handoff_webhook_url` (if configured) now fires with the visitor's email attached as the design intended.
+- Client-side validation matches the upstream's loose check (`/@/` + `.` + ≤255 chars); upstream `400 validation_failed` surfaces inline so the visitor can fix and resubmit. `401 invalid_token` drops the cached session.
+- **Pre-existing bug fix in `discardToken()`:** previously didn't reset `this.disabled` / `input.disabled` / `send.disabled`, so a visitor whose terminated session got 401-recycled would land on a fresh session with the input still locked. Now the method resets every flavour of UI lock state cleanly.
+
 ### Added (Origin-scoped chatbot selection)
 - **Connection tab no longer lets the operator pick any chatbot in the account.** On admin-key save, the plugin now derives this site's canonical origin (scheme + lowercase host, default port stripped) from `site_url()`, fetches each chatbot's origin allowlist via the upstream `GET /admin/chatbots/{slug}/origins`, and auto-selects the one whose allowlist contains this URL. Removes a real footgun: an admin could previously pick a chatbot bound to a different site's origin and have admin-mode sessions silently route there (admin-mode bypasses origin checks upstream by design, so the misconfiguration didn't surface as an error).
 - **Friendly no-match path.** Zero-match returns a specific `no_origin_match` error naming the expected origin and the exact `sw chatbot origins add` command the operator needs to run. The available chatbot list is surfaced so the operator can see what's in the account.

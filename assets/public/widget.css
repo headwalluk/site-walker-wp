@@ -185,7 +185,8 @@
   opacity: 0.6;
 }
 
-.swwp-input-row {
+.swwp-input-row,
+.swwp-email-row {
   display: flex;
   /* align-items: flex-end; */
   align-items: stretch;
@@ -237,4 +238,52 @@
   opacity: 0.55;
   cursor: not-allowed;
   filter: none;
+}
+
+/* Hard-handoff email capture — replaces the input row when
+   session_terminated fires. Styled to feel like a natural
+   continuation of the input idiom. */
+.swwp-email-input {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.swwp-email-input:focus {
+  border-color: var(--swwp-accent);
+}
+
+.swwp-email-send {
+  background: var(--swwp-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.swwp-email-send:hover,
+.swwp-email-send:focus {
+  filter: brightness(1.1);
+}
+
+.swwp-email-input:disabled,
+.swwp-email-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.swwp-email-thanks {
+  padding: 14px;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
 }

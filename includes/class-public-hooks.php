@@ -116,6 +116,20 @@ class Public_Hooks {
 			(int) $config['maxMessageLen'],
 			esc_attr__( 'Send message', 'site-walker' )
 		);
+
+		// Hard-handoff email capture (hidden until session_terminated fires
+		// — the widget swaps the input row for this form, posts the address
+		// to /sessions/visitor-email, then swaps in the thanks state).
+		$panel .= sprintf(
+			'<form class="swwp-email-row" autocomplete="email" hidden><input type="email" class="swwp-email-input" placeholder="%1$s" required maxlength="255" /><button type="submit" class="swwp-email-send button" aria-label="%2$s">&rarr;</button></form>',
+			esc_attr__( 'Your email address', 'site-walker' ),
+			esc_attr__( 'Send email', 'site-walker' )
+		);
+		$panel .= sprintf(
+			'<div class="swwp-email-thanks" hidden>%s</div>',
+			esc_html__( 'Thanks — we\'ll be in touch.', 'site-walker' )
+		);
+
 		$panel .= '</div>';
 
 		echo $panel; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All interpolated values escaped above.

@@ -1,9 +1,9 @@
 # Project Tracker
 
 **Version:** 0.5.0
-**Last Updated:** 2026-05-24
-**Current Phase:** Toward 1.0.0 (two items above the line below — origin-scoping just shipped)
-**Overall Progress:** ~85% of "v1 shippable"
+**Last Updated:** 2026-05-25
+**Current Phase:** Toward 1.0.0 (one item above the line below — handoff loop just shipped)
+**Overall Progress:** ~92% of "v1 shippable"
 
 ---
 
@@ -22,12 +22,12 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 
 ### Required for 1.0.0
 - [ ] **Mobile + accessibility verification (user task).** Confirm the front-end widget works on phones (layout, tap targets, viewport behaviour) and meets baseline accessibility (focus trap when panel open, ESC to close, screen-reader-friendly labels on the launcher / close / send buttons). Drive from a real device + a screen-reader pass; tweak markup/CSS as gaps emerge.
-- [ ] **Soft / hard handoff — upstream force-trigger + plugin finishing touches.** Upstream API needs an admin-side way to force an early soft- or hard-handoff event on a session so we can exercise the front-end paths without burning real spend. Once that lands, finish the widget side: the upstream supports `POST /sessions/visitor-email`, and we already detect `session_terminated: true` (input locks), but there's no UI affordance for the visitor to actually leave their email after the model prompts for it. Add the email-capture form to the locked-input state. User drives the upstream change; plugin work follows.
 
 ### Done (shipped on `main`; pending next release tag)
 - [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`).
 - [x] **M10 — Operational availability.** Widget handles `503 chatbot_closed`; Chatbot tab gains `timezone` / `availability` (per-day grid) / `admin_session_budget_usd`; Usage tab surfaces the `customer` / `admin` spend split.
 - [x] **Origin-scoped chatbot selection.** Connection tab no longer offers a picker — it auto-selects the chatbot whose origin allowlist contains `site_url()`. Zero-match returns a specific `no_origin_match` error naming the `sw chatbot origins add` command the operator needs to run. Test-connection now verifies the saved chatbot's allowlist still contains this URL. Closes the real-world footgun where an operator could pick a chatbot bound to another site's origin and have admin-mode sessions silently route there.
+- [x] **Soft / hard handoff — full loop.** Upstream landed the `SW_SIM_SOFT/HARD_HANDOFF_AFTER_USER_TURNS` sim hooks (v0.20.0 / M23.5) so soft- and hard-handoff can be forced early without burning real spend. Plugin side closed the loop: on `session_terminated: true` the widget swaps the locked input row for an email-capture form, POSTs the address to `/sessions/visitor-email`, swaps in a "thanks" confirmation on 204. Form state persists across reloads. Pre-existing bug fixed: `discardToken()` now actually re-enables the input + clears all UI lock state on token recycle.
 - [x] **UX polish (post-M10).** Em-sized text + budget inputs (was px). Chatbot-availability vocabulary throughout (`Always online` / `(chatbot offline)` / `We're unavailable until …`) instead of the store-idiom `open` / `closed`.
 
 ### Done (shipped in 0.5.0)
