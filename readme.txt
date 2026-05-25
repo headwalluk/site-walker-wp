@@ -51,7 +51,7 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * First stable release.
 * Added: GitHub-Releases auto-updater. New plugin versions surface through WP's native plugin-update UI. Disable per-site with the `site_walker_updater_enabled` filter.
 * Added: tag-driven build workflow on GitHub Actions. Pushing a `v*.*.*` tag publishes signed-by-GitHub release zips.
-* Added: hard-handoff email-capture form. When the per-session spend cap fires, the widget swaps the locked input row for an email form, POSTs to `/sessions/visitor-email`, and shows a thanks state on success.
+* Added: email-capture flow with proper state machine. Voluntary "Request an email back" link below the chat input lets visitors leave their email any time; a hard-handoff (`session_terminated`) auto-switches to the same form. Inline success/error messages; retry on bad address; "← Back to chat" link after submission (only when the chat isn't terminated). Successful submissions persist across reloads.
 * Added: origin-scoped chatbot selection. Connection tab auto-selects the chatbot whose origin allowlist contains this WP install's URL (no manual picker).
 * Added: Sessions admin tab for read-only review of past conversations (paginated list + click-through detail view, hash-routed).
 * Added: operational hours (per-day schedule + timezone) on the Chatbot tab. Widget handles `503 chatbot_closed` with a polite "we're unavailable until X" message.

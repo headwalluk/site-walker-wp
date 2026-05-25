@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_(nothing yet)_
+
+## [1.0.0] - 2026-05-25
+
+First stable release. Pulls together five focused milestones (M6–M10), the release infrastructure (GitHub-Releases auto-updater + tag-driven build workflow), and a final email-capture UX rework into a coherent v1 product. Existing 0.5.0 installs receive this update through the new in-plugin updater on their next WP update cycle.
+
 ### Changed (widget email-capture UX)
 - The email-capture form is no longer always-visible alongside the chat input on terminated sessions. Replaced the always-on form + always-on thanks panel with a proper state machine:
   - **Chat mode (default).** Chat input visible. A small "Request an email back" link sits below the input row as a voluntary affordance.
@@ -13,10 +19,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - **Email result mode.** After Send is clicked, the response surfaces inline (success-green or error-red). Form is hidden on success; kept visible + re-enabled on error so the visitor can fix the address and retry. A "← Back to chat" link appears here, but **only** if the session is not terminated — on a hard handoff the chat is over and there's no chat to go back to.
 - Persistence is unchanged: a successful submission still sets `localStorage` so a reload of a terminated session shows the thanks state instead of the entry form again.
 - Removed `.swwp-email-thanks` markup + the corresponding `showEmailForm()` method, replaced by `.swwp-email-message` (used for both success and error states) and three explicit mode methods: `showChatMode()`, `showEmailEntry()`, `showEmailResult(message, kind)`. New `applyInitialUi()` helper centralises the terminated + emailSubmitted decision tree.
-
-## [1.0.0] - 2026-05-25
-
-First stable release. Pulls together five focused milestones (M6–M10) and the release infrastructure (GitHub-Releases auto-updater + tag-driven build workflow) into a coherent v1 product. Existing 0.5.0 installs receive this update through the new in-plugin updater on their next WP update cycle.
 
 ### Added (GitHub-Releases auto-updater + release workflow)
 - New `Github_Updater` class (`includes/class-github-updater.php`) — imported from the Quick 2FA plugin and refactored for Site Walker namespacing / identifiers. Hooks into WP's `pre_set_site_transient_update_plugins` and `plugins_api` so new GitHub releases surface as standard plugin updates through the native WP UI. Polls `api.github.com/repos/<repo>/releases/latest` with a 1-hour transient cache. Operators can disable per-site via the `site_walker_updater_enabled` filter (default `true`).
