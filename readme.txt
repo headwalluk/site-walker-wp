@@ -4,7 +4,7 @@ Tags: chat, chatbot, ai, llm, widget
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.5.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,17 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 
 == Changelog ==
 
+= 1.0.0 =
+* First stable release.
+* Added: GitHub-Releases auto-updater. New plugin versions surface through WP's native plugin-update UI. Disable per-site with the `site_walker_updater_enabled` filter.
+* Added: tag-driven build workflow on GitHub Actions. Pushing a `v*.*.*` tag publishes signed-by-GitHub release zips.
+* Added: hard-handoff email-capture form. When the per-session spend cap fires, the widget swaps the locked input row for an email form, POSTs to `/sessions/visitor-email`, and shows a thanks state on success.
+* Added: origin-scoped chatbot selection. Connection tab auto-selects the chatbot whose origin allowlist contains this WP install's URL (no manual picker).
+* Added: Sessions admin tab for read-only review of past conversations (paginated list + click-through detail view, hash-routed).
+* Added: operational hours (per-day schedule + timezone) on the Chatbot tab. Widget handles `503 chatbot_closed` with a polite "we're unavailable until X" message.
+* Added: admin-mode session budget cap field. Usage tab surfaces the customer / admin spend split.
+* Fixed: `discardToken()` now actually re-enables the input and clears all UI lock state on token recycle (previously left a terminated-then-reminted session with the input still locked).
+
 = 0.5.0 =
 * Added: full wp-admin tab surface over the upstream `/admin/chatbots/*` API — Connection, Chatbot, Geo, Usage. Account admin key stored server-side and never exposed to the browser. Auto-discovers the chatbot slug after key save.
 * Added: admin-mode session minting for logged-in WordPress admins. The widget gets a server-proxied admin session that bypasses operator-imposed gates (geo, operational hours, daily cap) upstream; account admin key stays on the WP host.
@@ -73,6 +84,9 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * Initial scaffold: settings page, front-end widget, three-state load flow (cached session → cached probe → fresh probe), session mint and chat turn handling.
 
 == Upgrade Notice ==
+
+= 1.0.0 =
+First stable release. Adds GitHub-Releases auto-updates (operators no longer need to upload zips manually for future updates), the hard-handoff email-capture form that closes the M20 budget-cap UX loop, origin-scoped chatbot selection (auto-picks the right chatbot for this site's URL, no manual picker), the Sessions admin tab for conversation review, and operational hours / per-session admin budget caps. Requires a Site Walker API instance running v0.18.0 or later for the Sessions tab; v0.20.0 or later if you want to use the sim hooks for handoff testing.
 
 = 0.5.0 =
 Substantial release: full wp-admin tab surface (Connection / Chatbot / Geo / Usage), admin-mode sessions for logged-in admins, and widget handling for the upstream M20 denial vocabulary. The General settings tab is now called Widget; existing option values are preserved across the rename. Requires a Site Walker API instance running v0.16.0 or later for the chat-side features, and v0.17.0 or later if you intend to use admin-mode sessions.

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_(nothing yet)_
+
+## [1.0.0] - 2026-05-25
+
+First stable release. Pulls together five focused milestones (M6–M10) and the release infrastructure (GitHub-Releases auto-updater + tag-driven build workflow) into a coherent v1 product. Existing 0.5.0 installs receive this update through the new in-plugin updater on their next WP update cycle.
+
 ### Added (GitHub-Releases auto-updater + release workflow)
 - New `Github_Updater` class (`includes/class-github-updater.php`) — imported from the Quick 2FA plugin and refactored for Site Walker namespacing / identifiers. Hooks into WP's `pre_set_site_transient_update_plugins` and `plugins_api` so new GitHub releases surface as standard plugin updates through the native WP UI. Polls `api.github.com/repos/<repo>/releases/latest` with a 1-hour transient cache. Operators can disable per-site via the `site_walker_updater_enabled` filter (default `true`).
 - New `.github/workflows/release.yml` — on every `v*.*.*` tag push, builds `site-walker-wp-<version>.zip` (versioned) and `site-walker-wp.zip` (stable filename), uploads both as workflow artifacts, and publishes them to GitHub Releases with auto-generated body text linking back to the CHANGELOG. The updater prefers the stable filename, falling back to any matching versioned zip if the stable one isn't present.

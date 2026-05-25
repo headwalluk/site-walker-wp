@@ -1,9 +1,9 @@
 # Project Tracker
 
-**Version:** 0.5.0
+**Version:** 1.0.0
 **Last Updated:** 2026-05-25
-**Current Phase:** 1.0.0 release prep (above-the-line list is empty)
-**Overall Progress:** ~98% of "v1 shippable"
+**Current Phase:** 1.0.0 shipped — next: polish + M4 integrations (below the line)
+**Overall Progress:** 100% of "v1 shippable"
 
 ---
 
@@ -23,7 +23,7 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 ### Required for 1.0.0
 - _(empty — all line items shipped to `main`; cutting 1.0.0 is the next step)_
 
-### Done (shipped on `main`; pending next release tag)
+### Done (shipped in 1.0.0)
 - [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`).
 - [x] **M10 — Operational availability.** Widget handles `503 chatbot_closed`; Chatbot tab gains `timezone` / `availability` (per-day grid) / `admin_session_budget_usd`; Usage tab surfaces the `customer` / `admin` spend split.
 - [x] **Origin-scoped chatbot selection.** Connection tab no longer offers a picker — it auto-selects the chatbot whose origin allowlist contains `site_url()`. Zero-match returns a specific `no_origin_match` error naming the `sw chatbot origins add` command the operator needs to run. Test-connection now verifies the saved chatbot's allowlist still contains this URL. Closes the real-world footgun where an operator could pick a chatbot bound to another site's origin and have admin-mode sessions silently route there.
