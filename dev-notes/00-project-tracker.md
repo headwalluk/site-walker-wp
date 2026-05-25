@@ -20,6 +20,10 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 ### In progress
 - _(M11 just shipped in 1.1.0 — nothing in flight)_
 
+### Next session (queued)
+- [ ] **Admin-area tidy.** Multiple "Save settings" buttons across the tabs are disorientating — only one Save per page would be cleaner. User wants to review the current behaviour in operation for a day or so before deciding what to change, so this is queued (not done now).
+- [ ] **Plan a chatbot-content editor admin tab.** A way for the site owner to edit their chatbot's markdown files (the upstream "system context blocks" — but **don't use that terminology in the UI**; pick a merchant-friendly name during planning). Planning only in the next session; implementation later. Background design for the upstream surface is in [`20-system-blocks-api.md`](20-system-blocks-api.md). When this plan lands, drop the existing "System context blocks" line from the Deferred admin-area features section below — it's superseded by this one.
+
 ### Done (shipped in 1.1.0)
 - [x] **M11 — Formatter extension + consolidation.** Chat-text rendering tidy-up: headings, bullet lists, ordered lists, italic, and markdown-syntax `[label](url)` links now render as HTML in the chat bubble instead of leaking through as plain text. Assistant-message formatter consolidated into a single shared module (`assets/shared/formatter.js`, exposed as `window.SiteWalkerFormatter`) consumed by both `widget.js` and `admin.js`. Folded in the 60-doc URL/markdown collision fix (trailing `*` / `_` no longer captured into the href). Loose-list grouping fix landed in the same release (blank line between items doesn't end the list any more). Retired the widget.js NUL-byte sentinel gotcha — file is plain ASCII now (`~~SWWPLINK<n>~~` placeholder scheme).
 

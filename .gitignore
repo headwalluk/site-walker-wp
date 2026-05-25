@@ -1,0 +1,9 @@
+# Diagnostic screenshots and other images that get dropped into dev-notes/
+# during a session — kept on disk for local reference, but not tracked. If
+# you want a particular image preserved as project memory, force-add it
+# with `git add -f dev-notes/<name>.png` and it'll stick.
+dev-notes/*.png
+dev-notes/*.jpg
+dev-notes/*.jpeg
+dev-notes/*.gif
+dev-notes/*.webp
