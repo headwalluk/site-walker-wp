@@ -54,7 +54,13 @@ class Admin_Hooks {
 
 		wp_enqueue_style( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.css', array(), \STWLK_PLUGIN_VERSION );
 
-		wp_enqueue_script( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.js', array( 'wp-color-picker' ), \STWLK_PLUGIN_VERSION, true );
+		// Shared assistant-message formatter. Same handle the front-end widget
+		// uses (see class-public-hooks.php); WP de-dupes by handle so loading
+		// it from both sides is safe. Used by the Sessions tab to render
+		// reviewed conversations identically to the live widget.
+		wp_enqueue_script( 'site-walker-wp-formatter', \STWLK_PLUGIN_URL . 'assets/shared/formatter.js', array(), \STWLK_PLUGIN_VERSION, true );
+
+		wp_enqueue_script( 'site-walker-wp-admin', \STWLK_PLUGIN_URL . 'assets/admin/admin.js', array( 'wp-color-picker', 'site-walker-wp-formatter' ), \STWLK_PLUGIN_VERSION, true );
 
 		// REST config the admin JS needs to talk to /wp-json/site-walker/v1/admin/*.
 		// Nonce is the standard 'wp_rest' nonce — WP REST will accept it on X-WP-Nonce.
@@ -68,7 +74,7 @@ class Admin_Hooks {
 		// `wp_timezone_string()` can also return a UTC offset like "+00:00"
 		// when the WP site is configured by offset rather than by zone, and
 		// the upstream API only accepts IANA names. Skip the offset case.
-		$wp_tz     = function_exists( 'wp_timezone_string' ) ? (string) wp_timezone_string() : '';
+		$wp_tz      = function_exists( 'wp_timezone_string' ) ? (string) wp_timezone_string() : '';
 		$wp_tz_iana = ( '' !== $wp_tz && '+' !== $wp_tz[0] && '-' !== $wp_tz[0] ) ? $wp_tz : '';
 
 		$config = array(
@@ -89,7 +95,7 @@ class Admin_Hooks {
 				'transportError'    => __( 'Couldn\'t reach the API server. Check the URL is correct and the server is up.', 'site-walker' ),
 				'noChatbots'        => __( 'Admin key works, but no chatbots were found for the account. Create one with `./bin/sw chatbot create`.', 'site-walker' ),
 				/* translators: %s: site origin like https://example.com */
-				'noOriginMatch'     => __( 'No chatbot in this account has %s on its origin allowlist. Add it upstream with: sw chatbot origins add <slug> %s', 'site-walker' ),
+				'noOriginMatch'     => __( 'No chatbot in this account has %1$s on its origin allowlist. Add it upstream with: sw chatbot origins add <slug> %2$s', 'site-walker' ),
 				'originMismatch'    => __( 'The saved chatbot no longer lists this site as an allowed origin. Re-save your admin key to find the right chatbot, or add this origin upstream.', 'site-walker' ),
 				'connectionOk'      => __( 'Connection OK.', 'site-walker' ),
 				'savedAndConnected' => __( 'Saved. Connected to:', 'site-walker' ),

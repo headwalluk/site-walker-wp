@@ -21,7 +21,13 @@ class Public_Hooks {
 
 		wp_enqueue_style( 'site-walker-wp-widget', \STWLK_PLUGIN_URL . 'assets/public/widget.css', array(), \STWLK_PLUGIN_VERSION );
 
-		wp_enqueue_script( 'site-walker-wp-widget', \STWLK_PLUGIN_URL . 'assets/public/widget.js', array(), \STWLK_PLUGIN_VERSION, true );
+		// Shared assistant-message formatter. Loaded as a dependency of the
+		// widget JS so it's always available when the widget renders chat
+		// bubbles; the same module is also enqueued in the Sessions admin
+		// tab via class-admin-hooks.php (WP de-dupes by handle).
+		wp_enqueue_script( 'site-walker-wp-formatter', \STWLK_PLUGIN_URL . 'assets/shared/formatter.js', array(), \STWLK_PLUGIN_VERSION, true );
+
+		wp_enqueue_script( 'site-walker-wp-widget', \STWLK_PLUGIN_URL . 'assets/public/widget.js', array( 'site-walker-wp-formatter' ), \STWLK_PLUGIN_VERSION, true );
 
 		$config = get_widget_config();
 

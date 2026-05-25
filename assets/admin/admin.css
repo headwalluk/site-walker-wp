@@ -337,3 +337,27 @@
   padding: 1px 4px;
   border-radius: 4px;
 }
+
+.site-walker-wp-settings .swwp-review-message-body h3 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 6px 0 2px;
+}
+
+.site-walker-wp-settings .swwp-review-message-body h3:first-child {
+  margin-top: 0;
+}
+
+.site-walker-wp-settings .swwp-review-message-body ul,
+.site-walker-wp-settings .swwp-review-message-body ol {
+  margin: 4px 0;
+  padding-left: 1.5em;
+}
+
+.site-walker-wp-settings .swwp-review-message-body li {
+  margin: 2px 0;
+}
+
+.site-walker-wp-settings .swwp-review-message-body em {
+  font-style: italic;
+}

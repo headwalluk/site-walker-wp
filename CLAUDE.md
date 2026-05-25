@@ -4,15 +4,10 @@ WordPress plugin: a front-end chat widget that talks to a [Site Walker](https://
 
 ## Gotchas
 
-### `assets/public/widget.js` contains literal NUL bytes — be careful when editing
+### Assistant-message rendering lives in a shared module
 
-`formatAssistantMessage()` (the linkifier) uses literal `\x00` bytes as the sentinel that wraps `LINK<n>` placeholders. The NULs are there because they reliably survive both `escapeHtml()` and the markdown regexes without colliding with any character the user or model could legitimately produce — a space-based sentinel would be ambiguous with real "LINK1" text in a reply.
+The chat-text formatter (escape, linkify with trusted-host allowlist, headings, lists, emphasis, inline code) is in [`assets/shared/formatter.js`](assets/shared/formatter.js), exposed on `window.SiteWalkerFormatter`. Both `assets/public/widget.js` (front-end chat bubbles) and `assets/admin/admin.js` (Sessions tab) consume it via the same handle (`site-walker-wp-formatter`), enqueued from `includes/class-public-hooks.php` and `includes/class-admin-hooks.php` respectively.
 
-Practical consequences:
+If you need to change how a markdown construct renders, edit the shared module — both call sites pick it up automatically.
 
-- **`git` treats the file as binary.** `git diff` shows `Bin 17179 → 17948 bytes` instead of a real diff. Use `git diff --text` (or `git log -p --text`) to see line-level changes. The file is valid JavaScript despite this; `node --check` passes; the browser parses it fine.
-- **The `Read` tool renders the NUL bytes as ordinary spaces** in its line-numbered output. If you copy a region from `Read` output into an `Edit` `old_string` and the region crosses one of the sentinel lines (around the `return \`...LINK${index}...${trailing}\`;` line and the matching `.replace(/.../g, ...)` regex), the match will silently fail because what looks like " LINK" in your `old_string` is actually `\x00LINK` in the file.
-- **Workaround for edits that need to touch sentinel lines:** either use `Write` to rewrite the whole file (preserving the NULs by reading the source via `cat -A` first to confirm their positions), or use `sed -i $'s/\x00LINK/...replacement.../g' file.js` to do the surgical replacement at the byte level. For edits to *adjacent* lines, restrict your `old_string` to a region that doesn't span the sentinel lines and the normal `Edit` flow works fine.
-- **If you ever rewrite `escapeHtml()`**, do not strip NUL bytes (`.replace(/\x00/g, '')` or similar) — the linkifier depends on them surviving the escape pass.
-
-The sentinel choice is intentional and load-bearing; don't "fix" it to spaces without replacing it with another non-ambiguous character first.
+The module uses `~~SWWPLINK<n>~~` as the internal placeholder sentinel that holds tokenised URLs through the HTML-escape + markdown passes. `~` is the only printable ASCII char that doesn't collide with any of the markdown delimiters we parse (`*`, `_`, `` ` ``, `#`, `-`, digit-dot, `[`/`]`/`(`/`)`) and doesn't get touched by HTML escaping. If you add new markdown features that introduce `~` as a delimiter (strikethrough, for example), pick a different sentinel char first — the placeholder restore pass at the end of the pipeline assumes the sentinel survives every intermediate regex unchanged.

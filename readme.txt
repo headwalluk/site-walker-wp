@@ -4,7 +4,7 @@ Tags: chat, chatbot, ai, llm, widget
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,13 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 
 == Changelog ==
 
+= 1.1.0 =
+* Changed: chat-text rendering. Markdown headings (`#` / `##` / `###` collapse to `<h3>`), bullet lists (`- item`), ordered lists (`1. item`), and italic (`*em*` / `_em_`) now render as proper HTML elements in the chat bubble instead of leaking through as plain text. Existing bold, inline code, and same-origin / trusted-host auto-linking unchanged.
+* Added: markdown-syntax links. `[label](url)` becomes a clickable link if the URL matches the same-origin or trusted-hosts allowlist; otherwise the label renders as plain text and the URL is dropped (the model deliberately hid the URL behind link syntax, so we don't override that by surfacing the bare URL).
+* Changed: assistant-message formatter is now a single shared module (`assets/shared/formatter.js`, exposed as `window.SiteWalkerFormatter`) consumed by both the front-end widget and the Sessions admin tab. Replaces two near-duplicate regex blocks that had drifted apart.
+* Fixed: URL/markdown collision. `**https://example.com/path**` now linkifies cleanly inside the bold span instead of capturing the trailing `**` into the href (which 404'd).
+* Fixed: ordered and bullet lists where the model emits a blank line between items now collapse into one `<ol>` / `<ul>` instead of producing one list per item.
+
 = 1.0.0 =
 * First stable release.
 * Added: GitHub-Releases auto-updater. New plugin versions surface through WP's native plugin-update UI. Disable per-site with the `site_walker_updater_enabled` filter.
@@ -84,6 +91,9 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * Initial scaffold: settings page, front-end widget, three-state load flow (cached session → cached probe → fresh probe), session mint and chat turn handling.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Chat-text rendering tidy-up. Headings, bullet lists, ordered lists, italic, and markdown-syntax `[label](url)` links now render as proper HTML in the chat bubble instead of leaking through as `## Heading text` and `- bullet line` plain text. The formatter is now a single shared module across the front-end widget and the Sessions admin tab. No DB changes; no setting changes; transparent upgrade.
 
 = 1.0.0 =
 First stable release. Adds GitHub-Releases auto-updates (operators no longer need to upload zips manually for future updates), the hard-handoff email-capture form that closes the M20 budget-cap UX loop, origin-scoped chatbot selection (auto-picks the right chatbot for this site's URL, no manual picker), the Sessions admin tab for conversation review, and operational hours / per-session admin budget caps. Requires a Site Walker API instance running v0.18.0 or later for the Sessions tab; v0.20.0 or later if you want to use the sim hooks for handoff testing.

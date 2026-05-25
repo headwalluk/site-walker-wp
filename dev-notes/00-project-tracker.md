@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Last Updated:** 2026-05-25
-**Current Phase:** 1.0.0 shipped — next: polish + M4 integrations (below the line)
+**Current Phase:** 1.1.0 shipped (chat-text rendering polish) — next: remaining polish queue + M4 integrations
 **Overall Progress:** 100% of "v1 shippable"
 
 ---
@@ -18,10 +18,10 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 ## Active TODO Items
 
 ### In progress
-- _(M9 + M10 just landed on `main` — nothing in flight)_
+- _(M11 just shipped in 1.1.0 — nothing in flight)_
 
-### Required for 1.0.0
-- _(empty — all line items shipped to `main`; cutting 1.0.0 is the next step)_
+### Done (shipped in 1.1.0)
+- [x] **M11 — Formatter extension + consolidation.** Chat-text rendering tidy-up: headings, bullet lists, ordered lists, italic, and markdown-syntax `[label](url)` links now render as HTML in the chat bubble instead of leaking through as plain text. Assistant-message formatter consolidated into a single shared module (`assets/shared/formatter.js`, exposed as `window.SiteWalkerFormatter`) consumed by both `widget.js` and `admin.js`. Folded in the 60-doc URL/markdown collision fix (trailing `*` / `_` no longer captured into the href). Loose-list grouping fix landed in the same release (blank line between items doesn't end the list any more). Retired the widget.js NUL-byte sentinel gotcha — file is plain ASCII now (`~~SWWPLINK<n>~~` placeholder scheme).
 
 ### Done (shipped in 1.0.0)
 - [x] **M9 — Session review.** Sessions tab with paginated list + click-through detail view, hash-routed (`#sessions` + `#sessions/<id>`).
@@ -40,12 +40,11 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 
 ---
 
-**═══════════════ ↑ Required for 1.0.0  |  ↓ Post-1.0.0 ═══════════════**
+**═══════════════ ↑ Required for 1.1.0  |  ↓ Post-1.1.0 ═══════════════**
 
 ---
 
-### Polish (post-1.0.0)
-- [ ] **Formatter URL/markdown collision fix.** The widget's URL tokenizer greedily eats trailing `*` / `_` markdown delimiters into the URL match, breaking links like `**https://example.com/path**` (which 404 because `**` ends up in the href). Two-line trailing-strip regex fix in `widget.js` + `admin.js`. Full diagnosis + test table in [`60-formatter-url-markdown-collision.md`](60-formatter-url-markdown-collision.md). ~15 min.
+### Polish (post-1.1.0)
 - [ ] Admin-side "test connection" button on the Connection tab (the "Refresh" button does the same round-trip; a labelled "test" cycle is friendlier).
 - [ ] Conversation reset affordance — clear `localStorage`, mint a fresh session. Useful for QA + for visitors who want to start over.
 
@@ -179,6 +178,45 @@ Caught the plugin up to upstream M21's operational-hours surface. Two distinct h
 - Per-day overrides (public holidays, one-off closures). Upstream doesn't support them either.
 - Maintenance-mode kill switch (`chatbots.is_paused`). Separate upstream feature, not built yet.
 - Auto-detect timezone mismatch warnings ("your WP site's tz is X but the chatbot's is Y").
+
+### M11 — Formatter extension + consolidation ✅ (shipped in 1.1.0)
+Tidy up chat-text rendering so it handles the markdown the model actually emits (the widget is currently leaking literal `## heading` and `- bullet` lines through to visitors), and consolidate the duplicated formatter across `widget.js` and `admin.js` into a shared module. Rolls in the URL/markdown collision fix already diagnosed in [`60-formatter-url-markdown-collision.md`](60-formatter-url-markdown-collision.md) — its anticipated shared-module refactor is the natural home for this work.
+
+In-house renderer rather than an off-the-shelf library: the trusted-host allowlist (only same-origin + operator-curated external hosts get `<a>` tags; everything else stays plain text) doesn't have a clean extension point in any of the small markdown libs (snarkdown, drawdown, marked) — they all either linkify every URL or none, which would force us to keep our own linkifier running alongside the lib. Cheaper to add the missing features directly than to wire up a third actor in the sentinel dance.
+
+**Scope (inline):**
+- [x] `*em*` / `_em_` → `<em>` (single-line, no nesting beyond existing `**strong**`).
+- [x] `[text](url)` → `<a>` honouring the existing `trustedHosts` allowlist. Non-allowlisted hosts: render `text` as plain text and drop the link silently (the model asserted the URL belongs there; we don't want to surface a hallucinated phishing route, but we also don't want to surface the raw URL when the model deliberately hid it behind link syntax).
+- [x] Existing `**strong**` and inline backtick `code` preserved unchanged.
+
+**Scope (block):**
+- [x] `# `, `## `, `### ` → `<h3>` (collapse all heading levels — visitor-side widget shouldn't introduce a page-h1, and shifting by 2 lets `####` produce `<h6>` which is silly; collapse-all keeps typography predictable).
+- [x] Consecutive `- ` lines → `<ul><li>…</li></ul>` (group adjacent bullet lines into one list).
+- [x] Consecutive `1. ` / `2. ` lines → `<ol><li>…</li></ol>` (semantic ordered list; CSS controls numbering display).
+- [x] Block elements stay line-oriented — no need to handle nested lists or block elements inside other blocks.
+
+**Refactor:**
+- [x] Factor the formatter into a shared JS module enqueued by both `widget.js` and `admin.js` (60-doc flags this as the right next move once the formatter sees another change — this is that change). Lives at `assets/shared/formatter.js`, exposed as `window.SiteWalkerFormatter` (`.formatAssistant(raw, opts)`, `.format(raw, role, opts)`, `.escape(s)`).
+- [x] Convert sentinels to an ASCII scheme so `widget.js` stops being a binary as far as git is concerned. Used `~~SWWPLINK<n>~~` rather than `admin.js`'s previous `__SWWPLINK<n>__` because the new `_em_` italic regex would otherwise eat the sentinel's own underscores (`_SWWPLINK0_` is a valid italic match inside `__SWWPLINK0__`); `~` is the only printable ASCII char that doesn't collide with any of our markdown delimiters. NUL-byte gotcha gone.
+- [x] Land the URL/markdown collision fix from 60-doc in the new shared module (the two-line trailing-strip extension).
+- [x] Strip the NUL-sentinel gotcha section from `CLAUDE.md` once the shared module ships; replace with a brief note about the new module's location + sentinel scheme.
+
+**Verification:**
+- [x] Walk through each row of 60-doc's test table against the refactored formatter (regression check on the bug-fix portion). Node-driven, see notes below.
+- [ ] Eyeball-test fresh markdown inputs: a `##` heading mid-reply, a 3-item `- ` bullet list, a `1.`/`2.`/`3.` ordered list, an `*italic phrase*`, `[click here](https://example.com)` with both an allowlisted and non-allowlisted host. _(needs in-browser pass — user)_
+- [ ] Confirm Sessions-tab message rendering matches widget rendering (both load the same shared module). _(needs in-browser pass — user)_
+- [x] CHANGELOG entry under `[Unreleased]`.
+
+Also added minimal chat-bubble CSS for the new block elements (`h3`, `ul`, `ol`, `li`, `em`) in both `assets/public/widget.css` and `assets/admin/admin.css` so browser-default margins/padding don't blow out the bubble width.
+
+Pre-implementation regex testing was done with a node harness (`/tmp/sw-formatter-test.js`) that stubs `window` and runs `formatAssistant()` over the 60-doc test table + the new markdown scope. All 60-doc rows produce the expected anchors; new rows produce the expected `<h3>` / `<ul>` / `<ol>` / `<em>` shapes; the two user-reported leak cases (`## Some text`, `- some text`) now wrap correctly.
+
+**Out of scope (won't do):**
+- Nested lists, blockquotes, tables, images, horizontal rules, fenced code blocks, raw HTML passthrough.
+- Multi-line code blocks (inline backticks are already covered; fenced blocks aren't a chat-reply shape).
+- Configurable heading-level mapping (collapse-to-h3 is fine as a baked-in choice).
+
+Estimated effort: 2-3 hours — mostly the refactor + the verification matrix; the regex additions themselves are small.
 
 ---
 

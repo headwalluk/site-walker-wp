@@ -740,63 +740,20 @@
 		panel.addEventListener('swwp:tab-activate', load);
 	}
 
-	// ---------------------------------------------------------------------
-	// Message-content formatter (Sessions tab)
-	//
-	// Renders assistant message bodies the same way the front-end widget
-	// does (markdown bold, inline code, same-host + trusted-host auto-
-	// linking). Deliberately a duplicate of widget.js's
-	// formatAssistantMessage rather than a shared module — see CLAUDE.md
-	// for why widget.js uses literal NUL bytes and how that turns the file
-	// binary-as-far-as-git-is-concerned. We use a verbose ASCII sentinel
-	// here instead so admin.js stays a normal text file. If you change one
-	// formatter, update both (the contract is small and stable; the
-	// duplication cost is real but bounded).
-	// ---------------------------------------------------------------------
+	// Message-content formatter shims. Both delegate to the shared module
+	// in assets/shared/formatter.js so the Sessions tab renders messages
+	// the same way the front-end widget does (markdown headings, lists,
+	// emphasis, inline code, same-host + trusted-host auto-linking).
+	// Kept as local names so the existing `${escapeMessageHtml(…)}` and
+	// `formatMessageBody(…)` call sites don't need to change.
 	function escapeMessageHtml(s) {
-		return s
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#39;');
+		return window.SiteWalkerFormatter.escape(s);
 	}
 
 	function formatMessageBody(raw, role) {
-		if (typeof raw !== 'string') return '';
-		if (role !== 'assistant') return escapeMessageHtml(raw);
-
-		const trusted = new Set(Array.isArray(config.trustedHosts) ? config.trustedHosts : []);
-		const urlPattern = /https?:\/\/[^\s<>"')]+/g;
-		const placeholders = [];
-
-		const withPlaceholders = raw.replace(urlPattern, (match) => {
-			const trailingMatch = match.match(/[.,;:!?)\]]+$/);
-			const trailing = trailingMatch ? trailingMatch[0] : '';
-			const url = trailing ? match.slice(0, -trailing.length) : match;
-
-			let parsed;
-			try { parsed = new URL(url); } catch (e) { return match; }
-
-			const isSameHost = parsed.host === window.location.host;
-			const isTrustedExternal = trusted.has(parsed.host);
-			if (!isSameHost && !isTrustedExternal) return match;
-
-			const extraAttrs = isSameHost
-				? ''
-				: ' target="_blank" rel="noopener noreferrer nofollow"';
-			const idx = placeholders.length;
-			placeholders.push(
-				`<a href="${escapeMessageHtml(parsed.href)}"${extraAttrs}>${escapeMessageHtml(url)}</a>`
-			);
-			return `__SWWPLINK${idx}__`;
+		return window.SiteWalkerFormatter.format(raw, role, {
+			trustedHosts: config.trustedHosts,
 		});
-
-		let html = escapeMessageHtml(withPlaceholders);
-		html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
-		html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
-		html = html.replace(/__SWWPLINK(\d+)__/g, (_, i) => placeholders[Number(i)]);
-		return html;
 	}
 
 	// ---------------------------------------------------------------------

@@ -173,6 +173,30 @@
   border-radius: 4px;
 }
 
+.swwp-message-assistant h3 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 6px 0 2px;
+}
+
+.swwp-message-assistant h3:first-child {
+  margin-top: 0;
+}
+
+.swwp-message-assistant ul,
+.swwp-message-assistant ol {
+  margin: 4px 0;
+  padding-left: 1.5em;
+}
+
+.swwp-message-assistant li {
+  margin: 2px 0;
+}
+
+.swwp-message-assistant em {
+  font-style: italic;
+}
+
 .swwp-message-system {
   align-self: center;
   background: transparent;

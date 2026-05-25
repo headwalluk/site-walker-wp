@@ -8,6 +8,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 _(nothing yet)_
 
+## [1.1.0] - 2026-05-25
+
+Post-1.0.0 polish release focused on chat-text rendering: visitors no longer see literal `## Heading text` or `- bullet line` markdown leaking into the chat bubble, and the formatter has been consolidated into a single shared module consumed by both the widget and the Sessions admin tab.
+
+### Changed (chat-text rendering — M11)
+- Extracted the assistant-message formatter into a shared module, `assets/shared/formatter.js` (`window.SiteWalkerFormatter`), consumed by both the front-end widget (`widget.js`) and the Sessions admin tab (`admin.js`) via a new `site-walker-wp-formatter` enqueue handle. Replaces the two near-duplicate `formatAssistantMessage` / `formatMessageBody` regex blocks that had drifted apart.
+- Widened the markdown subset rendered in chat bubbles. Previously **strong**, inline `code`, and bare-URL auto-linking; now adds:
+  - `# `, `## `, `### `, `#### `, `##### `, `###### ` → `<h3>` (all heading levels collapse to h3 — visitor-side widget should never introduce a page-h1).
+  - `- foo\n- bar\n- baz` → `<ul><li>foo</li><li>bar</li><li>baz</li></ul>`. Consecutive bullet lines collapse into one list wrapper.
+  - `1. foo\n2. bar\n3. baz` → `<ol><li>foo</li><li>bar</li><li>baz</li></ol>`. Number isn't honoured (CSS controls display); just used to detect ordered intent.
+  - `*em*` and `_em_` → `<em>`.
+  - `[label](url)` → `<a>` if `url` matches the trusted-host allowlist; otherwise the label renders as plain text and the URL is dropped (the model deliberately hid the URL behind link syntax, so we don't override that by surfacing the bare URL).
+- Closes the rendering leaks the user flagged: literal `## Heading text` and `- bullet line` no longer pass through to the visitor as plain text.
+- Folded in the URL/markdown collision fix from [`dev-notes/60-formatter-url-markdown-collision.md`](dev-notes/60-formatter-url-markdown-collision.md) — the bare-URL trailing-strip pattern now recognises `*` and `_` as trailing punctuation, so `**https://example.com/path**` linkifies cleanly inside the bold span instead of capturing `**` into the href.
+
+### Fixed
+- Loose lists (model emits a blank line between items, e.g. `1. foo\n\n1. bar\n\n1. baz`) now collapse into a single `<ol>` / `<ul>` instead of producing one list per item. A blank line inside a list no longer ends the list — only a non-blank, non-list line does.
+
+### Removed
+- `assets/public/widget.js` no longer contains literal NUL bytes — the new shared module uses `~~SWWPLINK<n>~~` as the placeholder sentinel (printable ASCII, no collision with any markdown delimiter we parse). `git` now treats the file as text. The corresponding NUL-sentinel gotcha section in `CLAUDE.md` has been retired and replaced with a brief pointer to the shared module.
+
 ## [1.0.0] - 2026-05-25
 
 First stable release. Pulls together five focused milestones (M6–M10), the release infrastructure (GitHub-Releases auto-updater + tag-driven build workflow), and a final email-capture UX rework into a coherent v1 product. Existing 0.5.0 installs receive this update through the new in-plugin updater on their next WP update cycle.
