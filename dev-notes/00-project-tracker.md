@@ -45,6 +45,7 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 ---
 
 ### Polish (post-1.0.0)
+- [ ] **Formatter URL/markdown collision fix.** The widget's URL tokenizer greedily eats trailing `*` / `_` markdown delimiters into the URL match, breaking links like `**https://example.com/path**` (which 404 because `**` ends up in the href). Two-line trailing-strip regex fix in `widget.js` + `admin.js`. Full diagnosis + test table in [`60-formatter-url-markdown-collision.md`](60-formatter-url-markdown-collision.md). ~15 min.
 - [ ] Admin-side "test connection" button on the Connection tab (the "Refresh" button does the same round-trip; a labelled "test" cycle is friendlier).
 - [ ] Conversation reset affordance — clear `localStorage`, mint a fresh session. Useful for QA + for visitors who want to start over.
 
