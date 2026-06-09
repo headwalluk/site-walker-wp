@@ -1,0 +1,613 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Site Walker 1.1.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/site-walker-wp\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-25T20:00:34+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language: nl_NL\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: site-walker\n"
+
+#. Plugin Name of the plugin
+#: site-walker-wp.php
+#: includes/class-admin-hooks.php:24
+#: includes/class-admin-hooks.php:25
+msgid "Site Walker"
+msgstr "Site Walker"
+
+#. Plugin URI of the plugin
+#: site-walker-wp.php
+msgid "https://site-walker.net/"
+msgstr "https://site-walker.net/"
+
+#. Description of the plugin
+#: site-walker-wp.php
+msgid "Front-end chat widget powered by a Site Walker API instance."
+msgstr "Chatwidget voor de front-end, aangedreven door een Site Walker API-instantie."
+
+#. Author of the plugin
+#: site-walker-wp.php
+msgid "Headwall Hosting"
+msgstr "Headwall Hosting"
+
+#. Author URI of the plugin
+#: site-walker-wp.php
+msgid "https://headwall-hosting.com/"
+msgstr "https://headwall-hosting.com/"
+
+#: admin-templates/settings-page.php:20
+#: admin-templates/tabs/connection.php:110
+msgid "Connection"
+msgstr "Verbinding"
+
+#: admin-templates/settings-page.php:21
+#: includes/class-settings.php:165
+msgid "Widget"
+msgstr "Widget"
+
+#: admin-templates/settings-page.php:22
+#: includes/class-settings.php:172
+msgid "Appearance"
+msgstr "Uiterlijk"
+
+#: admin-templates/settings-page.php:23
+#: admin-templates/tabs/connection.php:81
+msgid "Chatbot"
+msgstr "Chatbot"
+
+#: admin-templates/settings-page.php:25
+msgid "Geo"
+msgstr "Aardrijkskunde"
+
+#: admin-templates/settings-page.php:26
+msgid "Usage"
+msgstr "Gebruik"
+
+#: admin-templates/settings-page.php:27
+msgid "Sessions"
+msgstr "Sessies"
+
+#: admin-templates/settings-page.php:82
+msgid "Tab template not found. Re-install the plugin."
+msgstr "Het tabblad-sjabloon is niet gevonden. Installeer de plug-in opnieuw."
+
+#: admin-templates/tabs/blocks.php:25
+#: admin-templates/tabs/chatbot.php:21
+#: admin-templates/tabs/geo.php:22
+#: admin-templates/tabs/sessions.php:23
+#: admin-templates/tabs/usage.php:30
+msgid "No chatbot connected yet. Save your admin key on the Connection tab first."
+msgstr "Er is nog geen chatbot gekoppeld. Sla eerst je beheerderssleutel op via het tabblad ‘Verbinding’."
+
+#: admin-templates/tabs/blocks.php:29
+#: admin-templates/tabs/chatbot.php:25
+#: admin-templates/tabs/geo.php:26
+#: admin-templates/tabs/sessions.php:27
+#: admin-templates/tabs/usage.php:34
+msgid "Go to Connection"
+msgstr "Ga naar Verbinding"
+
+#: admin-templates/tabs/chatbot.php:31
+msgid "Loading current chatbot configuration…"
+msgstr "De huidige chatbotconfiguratie wordt geladen…"
+
+#: admin-templates/tabs/chatbot.php:38
+msgid "Welcome message"
+msgstr "Welkomstbericht"
+
+#: admin-templates/tabs/chatbot.php:42
+msgid "Shown to a visitor as the assistant's first message when they start a new session. Leave blank for no welcome."
+msgstr "Dit wordt aan een bezoeker getoond als het eerste bericht van de assistent wanneer deze een nieuwe sessie start. Laat dit veld leeg als je geen welkomstbericht wilt weergeven."
+
+#: admin-templates/tabs/chatbot.php:47
+msgid "Persona"
+msgstr "Persoon"
+
+#: admin-templates/tabs/chatbot.php:51
+msgid "High-level \"who is the assistant\" prompt prepended to every conversation. Tone, voice, what topics are in / out of scope. Leave blank to use the upstream default."
+msgstr "Voeg aan het begin van elk gesprek de vraag \"Wie is de assistent?\" toe. Toon, stemgebruik, welke onderwerpen wel of niet aan bod mogen komen. Laat dit veld leeg om de standaardinstelling van de bovenliggende laag te gebruiken."
+
+#: admin-templates/tabs/chatbot.php:56
+msgid "Daily budget cap (USD)"
+msgstr "Dagelijks budgetplafond (USD)"
+
+#: admin-templates/tabs/chatbot.php:60
+msgid "Spend ceiling per UTC day. The widget hides itself for the rest of the day once this is hit (resets at next UTC midnight). Leave blank for no cap (upstream may still enforce SW_MAX_DAILY_BUDGET_USD)."
+msgstr "Uitgavenlimiet per UTC-dag. Zodra deze limiet is bereikt, wordt de widget voor de rest van de dag verborgen (wordt om middernacht UTC opnieuw ingesteld). Laat het veld leeg als je geen limiet wilt instellen (de bovenliggende instantie kan nog steeds SW_MAX_DAILY_BUDGET_USD afdwingen)."
+
+#: admin-templates/tabs/chatbot.php:65
+msgid "Session budget cap (USD)"
+msgstr "Maximumbedrag per sessie (USD)"
+
+#: admin-templates/tabs/chatbot.php:69
+msgid "Spend ceiling per visitor conversation. When hit, the assistant's last reply is returned with session_terminated and the widget locks the input. Leave blank for no cap."
+msgstr "Maximumbedrag per bezoekersgesprek. Wanneer dit bedrag wordt bereikt, wordt het laatste antwoord van de assistent teruggestuurd met de status `session_terminated` en wordt de invoer door de widget geblokkeerd. Laat dit veld leeg als er geen limiet geldt."
+
+#: admin-templates/tabs/chatbot.php:74
+msgid "Soft handoff threshold (%)"
+msgstr "Drempelwaarde voor zachte handoff (%)"
+
+#: admin-templates/tabs/chatbot.php:78
+msgid "%"
+msgstr "%"
+
+#: admin-templates/tabs/chatbot.php:79
+msgid "Percent of the session budget at which the assistant is nudged to ask for the visitor's email (soft handoff). Default 80. Only meaningful when a session budget cap is set."
+msgstr "Het percentage van het sessiebudget waarbij de assistent wordt gestimuleerd om het e-mailadres van de bezoeker te vragen (zachte overdracht). Standaardwaarde: 80. Dit is alleen van belang als er een limiet voor het sessiebudget is ingesteld."
+
+#: admin-templates/tabs/chatbot.php:84
+msgid "Admin-mode session budget cap (USD)"
+msgstr "Maximumbedrag voor sessies in beheerdersmodus (USD)"
+
+#: admin-templates/tabs/chatbot.php:88
+msgid "Separate per-conversation cap for admin-mode sessions (logged-in WP admins). Leave blank for unbounded — admins are trusted by default."
+msgstr "Een aparte limiet per gesprek voor sessies in beheerdersmodus (ingelogde WP-beheerders). Laat dit veld leeg voor onbeperkt — beheerders worden standaard vertrouwd."
+
+#: admin-templates/tabs/chatbot.php:93
+msgid "Timezone"
+msgstr "Tijdzone"
+
+#: admin-templates/tabs/chatbot.php:98
+msgid "Use this site's timezone"
+msgstr "Gebruik de tijdzone van deze site"
+
+#: admin-templates/tabs/chatbot.php:100
+msgid "IANA timezone identifier like Europe/London or America/New_York. Leave blank for UTC. Required if you want operational hours to mean local time."
+msgstr "IANA-tijdzone-identificatie, zoals Europe/London of America/New_York. Laat leeg voor UTC. Verplicht als u wilt dat de openingstijden de lokale tijd aangeven."
+
+#: admin-templates/tabs/chatbot.php:104
+msgid "Operational hours"
+msgstr "Openingstijden"
+
+#: admin-templates/tabs/chatbot.php:109
+msgid "Always online"
+msgstr "Altijd online"
+
+#: admin-templates/tabs/chatbot.php:114
+msgid "Per schedule"
+msgstr "Volgens schema"
+
+#: admin-templates/tabs/chatbot.php:120
+msgid "Visitors landing outside the chatbot's online windows see a \"We're unavailable until …\" message; sessions already in progress run past the end of the window. Use HH:MM 24-hour format; 24:00 is end-of-day. Times are in the chatbot's timezone (above)."
+msgstr "Bezoekers die buiten de online openingstijden van de chatbot terechtkomen, krijgen het bericht \"We zijn niet beschikbaar tot …\" te zien; lopende sessies blijven ook na het einde van de openingstijden gewoon doorlopen. Gebruik de 24-uursnotatie (uur:minuut); 24:00 is het einde van de dag. De tijden zijn gebaseerd op de tijdzone van de chatbot (zie hierboven)."
+
+#: admin-templates/tabs/chatbot.php:127
+msgid "Save changes"
+msgstr "Wijzigingen opslaan"
+
+#: admin-templates/tabs/chatbot.php:130
+#: admin-templates/tabs/geo.php:77
+msgid "Reload from API"
+msgstr "Opnieuw laden via API"
+
+#: admin-templates/tabs/connection.php:26
+msgid "API server"
+msgstr "API-server"
+
+#: admin-templates/tabs/connection.php:28
+msgid "Base URL of the Site Walker API instance this WordPress site talks to. Changing the URL clears the saved admin key, since keys are scoped to a specific API instance."
+msgstr "Basis-URL van de Site Walker API-instantie waarmee deze WordPress-site communiceert. Als je de URL wijzigt, wordt de opgeslagen beheerderssleutel gewist, aangezien sleutels aan een specifieke API-instantie zijn gekoppeld."
+
+#: admin-templates/tabs/connection.php:33
+msgid "API URL"
+msgstr "API-URL"
+
+#: admin-templates/tabs/connection.php:41
+#: admin-templates/tabs/connection.php:54
+msgid "Admin key"
+msgstr "Beheerderssleutel"
+
+#. translators: %s: literal command
+#: admin-templates/tabs/connection.php:46
+#, php-format
+msgid "Account admin key minted via %s. The key is stored on the WordPress host and never exposed to a visitor's browser; only the prefix and last 4 characters are shown back to you after save."
+msgstr "De beheerderssleutel is aangemaakt via %s. De sleutel wordt opgeslagen op de WordPress-host en wordt nooit aan de browser van een bezoeker getoond; na het opslaan worden alleen het voorvoegsel en de laatste 4 tekens aan u getoond."
+
+#: admin-templates/tabs/connection.php:60
+msgid "Clear"
+msgstr "Wissen"
+
+#: admin-templates/tabs/connection.php:63
+msgid "Replace"
+msgstr "Vervangen"
+
+#: admin-templates/tabs/connection.php:75
+msgid "Save & connect"
+msgstr "Opslaan en verbinden"
+
+#: admin-templates/tabs/connection.php:83
+msgid "Auto-selected by matching this site's origin against each chatbot's allowlist. Each chatbot can only be managed from the WordPress install whose URL is on its origin allowlist — so there's nothing to pick here. If no match is found, the error message tells you what to add upstream."
+msgstr "Dit wordt automatisch geselecteerd door de herkomst van deze site te vergelijken met de lijst met toegestane bronnen van elke chatbot. Elke chatbot kan alleen worden beheerd vanuit de WordPress-installatie waarvan de URL op de lijst met toegestane bronnen staat — je hoeft hier dus niets te selecteren. Als er geen overeenkomst wordt gevonden, wordt in het foutbericht aangegeven wat je hogerop moet toevoegen."
+
+#: admin-templates/tabs/connection.php:87
+msgid "This site's origin"
+msgstr "De oorsprong van deze website"
+
+#: admin-templates/tabs/connection.php:91
+msgid "Derived from site_url(). The chatbot whose origin allowlist contains this URL becomes the active chatbot."
+msgstr "Afgeleid van site_url(). De chatbot waarvan de lijst met toegestane bronnen deze URL bevat, wordt de actieve chatbot."
+
+#: admin-templates/tabs/connection.php:96
+msgid "Active chatbot"
+msgstr "Actieve chatbot"
+
+#: admin-templates/tabs/connection.php:103
+msgid "— not connected —"
+msgstr "— geen verbinding —"
+
+#: admin-templates/tabs/connection.php:113
+msgid "Test connection"
+msgstr "Verbinding testen"
+
+#: admin-templates/tabs/geo.php:32
+msgid "Loading geo policy…"
+msgstr "Geobeleid wordt geladen…"
+
+#: admin-templates/tabs/geo.php:38
+msgid "Mode"
+msgstr "Mode"
+
+#: admin-templates/tabs/geo.php:43
+msgid "Allow all visitors"
+msgstr "Alle bezoekers toelaten"
+
+#: admin-templates/tabs/geo.php:47
+msgid "Block listed countries (allow everyone else)"
+msgstr "Landen op de zwarte lijst (alle anderen toestaan)"
+
+#: admin-templates/tabs/geo.php:51
+msgid "Allow only listed countries (block everyone else)"
+msgstr "Alleen de vermelde landen toestaan (alle anderen blokkeren)"
+
+#: admin-templates/tabs/geo.php:55
+msgid "Requires the upstream API server to have GEOIP_DB_PATH configured. Without it, only \"allow all\" is enforceable; the API will refuse to start a chat that needs an IP lookup."
+msgstr "Hiervoor moet op de upstream API-server GEOIP_DB_PATH zijn geconfigureerd. Zonder deze instelling is alleen \"alles toestaan\" mogelijk; de API zal weigeren een chat te starten waarvoor een IP-opzoeking nodig is."
+
+#: admin-templates/tabs/geo.php:61
+msgid "Country list"
+msgstr "Lijst van landen"
+
+#: admin-templates/tabs/geo.php:66
+msgid "ISO 3166-1 alpha-2 codes (two letters each), separated by commas, spaces, or newlines. Ignored when mode is \"Allow all\"."
+msgstr "ISO 3166-1 alpha-2-codes (elk twee letters), gescheiden door komma’s, spaties of nieuwe regels. Wordt genegeerd wanneer de modus is ingesteld op \"Alles toestaan\"."
+
+#: admin-templates/tabs/geo.php:74
+msgid "Save geo policy"
+msgstr "Geobeleid opslaan"
+
+#: admin-templates/tabs/blocks.php:35
+#: admin-templates/tabs/sessions.php:33
+msgid "Loading…"
+msgstr "Bezig met laden…"
+
+#: admin-templates/tabs/blocks.php:49
+#: admin-templates/tabs/sessions.php:40
+#: admin-templates/tabs/usage.php:54
+msgid "Refresh"
+msgstr "Vernieuwen"
+
+#: admin-templates/tabs/sessions.php:48
+msgid "ID"
+msgstr "Identificatienummer"
+
+#: admin-templates/tabs/sessions.php:49
+msgid "Last active"
+msgstr "Laatst actief"
+
+#: admin-templates/tabs/sessions.php:50
+#: admin-templates/tabs/usage.php:73
+msgid "Messages"
+msgstr "Berichten"
+
+#: admin-templates/tabs/sessions.php:51
+msgid "Tokens"
+msgstr "Muntjes"
+
+#: admin-templates/tabs/sessions.php:52
+msgid "Cost"
+msgstr "Kosten"
+
+#: admin-templates/tabs/sessions.php:54
+msgid "Visitor"
+msgstr "Bezoeker"
+
+#: admin-templates/tabs/sessions.php:55
+msgid "Status"
+msgstr "Status"
+
+#: admin-templates/tabs/sessions.php:64
+msgid "No sessions yet for this chatbot."
+msgstr "Er zijn nog geen sessies voor deze chatbot."
+
+#: admin-templates/tabs/sessions.php:69
+msgid "← Prev"
+msgstr "← Vorige"
+
+#: admin-templates/tabs/sessions.php:73
+msgid "Next →"
+msgstr "Volgende →"
+
+#: admin-templates/tabs/blocks.php:76
+#: admin-templates/tabs/sessions.php:82
+msgid "← Back to list"
+msgstr "← Terug naar de lijst"
+
+#: admin-templates/tabs/usage.php:19
+msgid "All time"
+msgstr "Ooit"
+
+#: admin-templates/tabs/usage.php:20
+msgid "Last hour"
+msgstr "Het afgelopen uur"
+
+#: admin-templates/tabs/usage.php:21
+msgid "Last 24 hours"
+msgstr "Afgelopen 24 uur"
+
+#: admin-templates/tabs/usage.php:22
+msgid "Last 7 days"
+msgstr "Afgelopen 7 dagen"
+
+#: admin-templates/tabs/usage.php:23
+msgid "Last 30 days"
+msgstr "Afgelopen 30 dagen"
+
+#: admin-templates/tabs/usage.php:40
+msgid "Loading usage…"
+msgstr "Gebruik wordt geladen…"
+
+#: admin-templates/tabs/usage.php:45
+msgid "Since:"
+msgstr "Sinds:"
+
+#: admin-templates/tabs/usage.php:65
+msgid "Combined"
+msgstr "Gecombineerd"
+
+#: admin-templates/tabs/usage.php:66
+msgid "Customer"
+msgstr "Klant"
+
+#: admin-templates/tabs/usage.php:66
+msgid "Counts toward the daily-cap budget."
+msgstr "Telt mee voor het dagelijkse budget."
+
+#: admin-templates/tabs/usage.php:67
+msgid "Admin mode"
+msgstr "Beheerdersmodus"
+
+#: admin-templates/tabs/usage.php:67
+msgid "Logged-in WP admin sessions; excluded from the daily-cap budget."
+msgstr "Ingelogde WP-beheerdersessies; worden niet meegeteld in het dagelijkse limietbudget."
+
+#: admin-templates/tabs/usage.php:74
+msgid "Cost (USD)"
+msgstr "Kosten (USD)"
+
+#: admin-templates/tabs/usage.php:75
+msgid "Tokens — input"
+msgstr "Tokens — invoer"
+
+#: admin-templates/tabs/usage.php:76
+msgid "Tokens — output"
+msgstr "Tokens — uitvoer"
+
+#: admin-templates/tabs/usage.php:77
+msgid "Tokens — cache write"
+msgstr "Tokens — schrijven naar cache"
+
+#: admin-templates/tabs/usage.php:78
+msgid "Tokens — cache read"
+msgstr "Tokens — cache lezen"
+
+#: admin-templates/tabs/usage.php:90
+msgid "Period"
+msgstr "Periode"
+
+#: includes/class-admin-hooks.php:39
+msgid "Insufficient permissions."
+msgstr "Onvoldoende rechten."
+
+#: includes/class-admin-hooks.php:91
+msgid "Something went wrong. Please try again."
+msgstr "Er is een fout opgetreden. Probeer het nog eens."
+
+#: includes/class-admin-hooks.php:92
+msgid "Admin key not recognised. Check that it's the right key and hasn't been revoked."
+msgstr "De beheerderssleutel wordt niet herkend. Controleer of dit de juiste sleutel is en of deze niet is ingetrokken."
+
+#: includes/class-admin-hooks.php:93
+msgid "This is a provisioning key, not an account admin key. Mint one with `./bin/sw account add-admin-key`."
+msgstr "Dit is een bevoegdheidssleutel, geen beheerderssleutel voor het account. Maak er een aan met `./bin/sw account add-admin-key`."
+
+#: includes/class-admin-hooks.php:94
+msgid "No chatbot found with this slug."
+msgstr "Er is geen chatbot gevonden met deze slug."
+
+#: includes/class-admin-hooks.php:95
+msgid "Couldn't reach the API server. Check the URL is correct and the server is up."
+msgstr "De API-server kon niet worden bereikt. Controleer of de URL correct is en of de server actief is."
+
+#: includes/class-admin-hooks.php:96
+msgid "Admin key works, but no chatbots were found for the account. Create one with `./bin/sw chatbot create`."
+msgstr "De beheerderssleutel werkt, maar er zijn geen chatbots gevonden voor dit account. Maak er een aan met `./bin/sw chatbot create`."
+
+#. translators: %s: site origin like https://example.com
+#: includes/class-admin-hooks.php:98
+#, php-format
+msgid "No chatbot in this account has %1$s on its origin allowlist. Add it upstream with: sw chatbot origins add <slug> %2$s"
+msgstr "Geen enkele chatbot in dit account heeft %1$s op de lijst met toegestane bronnen staan. Voeg deze toe via: sw chatbot origins add <slug> %2$s"
+
+#: includes/class-admin-hooks.php:99
+msgid "The saved chatbot no longer lists this site as an allowed origin. Re-save your admin key to find the right chatbot, or add this origin upstream."
+msgstr "De opgeslagen chatbot vermeldt deze site niet langer als toegestane bron. Sla je beheerderssleutel opnieuw op om de juiste chatbot te vinden, of voeg deze bron eerder in de keten toe."
+
+#: includes/class-admin-hooks.php:100
+msgid "Connection OK."
+msgstr "Verbinding in orde."
+
+#: includes/class-admin-hooks.php:101
+msgid "Saved. Connected to:"
+msgstr "Opgeslagen. Verbonden met:"
+
+#: includes/class-admin-hooks.php:102
+msgid "Saved."
+msgstr "Opgeslagen."
+
+#: includes/class-admin-hooks.php:103
+msgid "Clear the saved admin key? You'll need to paste it again to manage the chatbot from here."
+msgstr "De opgeslagen beheerderscode verwijderen? Je moet deze dan opnieuw invoeren om de chatbot vanaf hier te kunnen beheren."
+
+#: includes/class-admin-hooks.php:104
+msgid "Not connected."
+msgstr "Geen verbinding."
+
+#: includes/class-public-hooks.php:82
+msgid "Open chat"
+msgstr "Open chat"
+
+#: includes/class-public-hooks.php:112
+msgid "Chat"
+msgstr "Kat"
+
+#: includes/class-public-hooks.php:116
+msgid "Close chat"
+msgstr "Chat sluiten"
+
+#: includes/class-public-hooks.php:123
+msgid "Send message"
+msgstr "Bericht verzenden"
+
+#: includes/class-public-hooks.php:133
+msgid "Request an email back"
+msgstr "Vraag om een e-mail"
+
+#: includes/class-public-hooks.php:146
+msgid "Your email address"
+msgstr "Je e-mailadres"
+
+#: includes/class-public-hooks.php:147
+msgid "Send email"
+msgstr "E-mail verzenden"
+
+#: includes/class-public-hooks.php:151
+msgid "← Back to chat"
+msgstr "← Terug naar de chat"
+
+#: includes/class-settings.php:167
+msgid "Enable chat widget"
+msgstr "Chatwidget inschakelen"
+
+#: includes/class-settings.php:169
+msgid "Trusted external hosts"
+msgstr "Betrouwbare externe hosts"
+
+#: includes/class-settings.php:174
+msgid "Button icon"
+msgstr "Knoppictogram"
+
+#: includes/class-settings.php:176
+msgid "Position"
+msgstr "Functie"
+
+#: includes/class-settings.php:180
+msgid "Horizontal offset (px)"
+msgstr "Horizontale verschuiving (px)"
+
+#: includes/class-settings.php:188
+msgid "Vertical offset (px)"
+msgstr "Verticale verschuiving (px)"
+
+#: includes/class-settings.php:196
+msgid "Button background"
+msgstr "Achtergrond van de knop"
+
+#: includes/class-settings.php:204
+msgid "Button icon colour"
+msgstr "Kleur van het knoppictogram"
+
+#: includes/class-settings.php:212
+msgid "Chat accent colour"
+msgstr "Kleur van de chat-accenttekst"
+
+#: includes/class-settings.php:218
+msgid "Header text"
+msgstr "Koptekst"
+
+#: includes/class-settings.php:222
+msgid "Input placeholder"
+msgstr "Plaatshouder voor invoer"
+
+#: includes/class-settings.php:239
+msgid "Inject the chat widget on the front-end."
+msgstr "Voeg de chatwidget toe aan de front-end."
+
+#: includes/class-settings.php:254
+msgid "URLs in the assistant's replies that point to these hosts will be rendered as clickable links. One host per line. Same-site URLs (this WordPress site's host) are always clickable. Exact match only — 'example.com' does not match 'sub.example.com'; add the subdomain explicitly if you need it."
+msgstr "URL’s in de antwoorden van de assistent die naar deze hosts verwijzen, worden weergegeven als klikbare links. Eén host per regel. URL’s van dezelfde site (de host van deze WordPress-site) zijn altijd klikbaar. Alleen exacte overeenkomsten — 'example.com' komt niet overeen met 'sub.example.com'; voeg het subdomein expliciet toe als dat nodig is."
+
+#: includes/class-settings.php:319
+msgid "pixels"
+msgstr "pixels"
+
+#: admin-templates/settings-page.php:24
+msgid "Context"
+msgstr "Context"
+
+#: admin-templates/tabs/blocks.php:41
+msgid "Context blocks are snippets of background knowledge the assistant gets with every conversation — store policies, shipping rules, tone reminders, anything it should always know. Add as many as you need."
+msgstr "Contextblokken zijn stukjes achtergrondinformatie die de assistent bij elk gesprek meekrijgt — winkelbeleid, verzendregels, aanwijzingen voor de toon, alles wat hij altijd moet weten. Voeg er zoveel toe als je nodig hebt."
+
+#: admin-templates/tabs/blocks.php:46
+msgid "Add block"
+msgstr "Blok toevoegen"
+
+#: admin-templates/tabs/blocks.php:57
+#: admin-templates/tabs/blocks.php:83
+msgid "Name"
+msgstr "Naam"
+
+#: admin-templates/tabs/blocks.php:58
+msgid "Size"
+msgstr "Aan u"
+
+#: admin-templates/tabs/blocks.php:59
+msgid "Last modified"
+msgstr "Laatst gewijzigd"
+
+#: admin-templates/tabs/blocks.php:68
+msgid "No context blocks yet. Add one to give your assistant extra background to work from."
+msgstr "Er zijn nog geen contextblokken. Voeg er een toe om je assistent extra achtergrondinformatie te geven om mee te werken."
+
+#: admin-templates/tabs/blocks.php:88
+msgid "Letters, numbers, hyphens and underscores only. The name can't be changed after the block is created."
+msgstr "Alleen letters, cijfers, koppeltekens en onderstrepingstekens. De naam kan niet meer worden gewijzigd nadat het blok is aangemaakt."
+
+#: admin-templates/tabs/blocks.php:91
+msgid "A few names are special: the assistant's persona is set on the Chatbot tab; HANDOFF_SOFT and HANDOFF_HARD let you customise the messages shown when a conversation is handed off."
+msgstr "Een paar namen zijn bijzonder: het profiel van de assistent wordt ingesteld op het tabblad Chatbot; met HANDOFF_SOFT en HANDOFF_HARD kun je de berichten aanpassen die worden weergegeven wanneer een gesprek wordt doorgegeven."
+
+#: admin-templates/tabs/blocks.php:97
+msgid "Content"
+msgstr "Inhoud"
+
+#: admin-templates/tabs/blocks.php:103
+msgid "Markdown is supported. Maximum 64 KB."
+msgstr "Markdown wordt ondersteund. Maximaal 64 KB."
+
+#: admin-templates/tabs/blocks.php:111
+msgid "Save block"
+msgstr "Blok opslaan"
+
+#: admin-templates/tabs/blocks.php:114
+msgid "Delete"
+msgstr "Verwijderen"
+
+#: admin-templates/tabs/sessions.php:53
+msgid "Country"
+msgstr "Land"
