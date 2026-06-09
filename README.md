@@ -2,7 +2,7 @@
 
 A floating front-end chat widget for WordPress, talking directly to a [Site Walker](https://site-walker.net) API instance from the visitor's browser.
 
-**Status:** 1.1.1 — admin settings page hides the shared "Save changes" button on REST-driven tabs.
+**Status:** 1.2.0 — new Context tab for editing the chatbot's context blocks from wp-admin, plus a visitor-country column on the Sessions tab.
 
 ## Install
 

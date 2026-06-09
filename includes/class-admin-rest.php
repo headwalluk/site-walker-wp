@@ -113,6 +113,51 @@ class Admin_REST {
 			)
 		);
 
+		// Context blocks — filesystem-backed system blocks. Surfaced in the
+		// UI as the "Context" tab. List + delete ride the JSON proxy; the
+		// single-block get/put use the raw-body path on Admin_API_Client
+		// because block content is text/markdown, not JSON.
+		register_rest_route(
+			$ns,
+			'/' . $root . '/chatbot/blocks',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'blocks_list' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			$ns,
+			'/' . $root . '/chatbot/blocks/(?P<name>[A-Za-z0-9_-]+)',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( $this, 'block_get' ),
+					'permission_callback' => array( $this, 'can_manage' ),
+					'args'                => array(
+						'name' => array( 'type' => 'string', 'required' => true ),
+					),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $this, 'block_put' ),
+					'permission_callback' => array( $this, 'can_manage' ),
+					'args'                => array(
+						'name' => array( 'type' => 'string', 'required' => true ),
+					),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( $this, 'block_delete' ),
+					'permission_callback' => array( $this, 'can_manage' ),
+					'args'                => array(
+						'name' => array( 'type' => 'string', 'required' => true ),
+					),
+				),
+			)
+		);
+
 		// Sessions / messages — read-only browse over a chatbot's conversations.
 		// Proxies the upstream M22 routes; the visitor's session token is
 		// deliberately NOT in the response shape (sessions addressed by
@@ -383,6 +428,116 @@ class Admin_REST {
 	}
 
 	// ---------------------------------------------------------------------
+	// Context blocks (filesystem-backed system blocks)
+	// ---------------------------------------------------------------------
+
+	/**
+	 * List the chatbot's blocks. Upstream returns `{blocks:[{name,size}]}`,
+	 * which is JSON, so this rides the standard JSON proxy.
+	 */
+	public function blocks_list( \WP_REST_Request $request ) {
+		unset( $request );
+		return $this->proxy_to_chatbot( 'GET', null, '/blocks' );
+	}
+
+	/**
+	 * Fetch one block's content. Upstream responds with raw `text/markdown`,
+	 * so we use the raw client path and re-wrap the body into a small JSON
+	 * envelope (`{name, content}`) for the admin JS.
+	 */
+	public function block_get( \WP_REST_Request $request ) {
+		$name = (string) $request['name'];
+		$err  = $this->validate_block_name( $name );
+		if ( null !== $err ) {
+			return $err;
+		}
+
+		$ctx = $this->resolve_client_and_slug();
+		if ( isset( $ctx['error'] ) ) {
+			return $ctx['error'];
+		}
+
+		$path   = '/admin/chatbots/' . rawurlencode( $ctx['slug'] ) . '/blocks/' . rawurlencode( $name );
+		$result = $ctx['client']->get_raw( $path );
+		if ( ! $result['ok'] ) {
+			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
+		}
+
+		return rest_ensure_response(
+			array(
+				'name'    => $name,
+				'content' => (string) $result['data'],
+			)
+		);
+	}
+
+	/**
+	 * Write/overwrite a block. Takes `{content}` JSON from the browser and
+	 * forwards it as a `text/markdown` body upstream. Enforces the name rules
+	 * and 64KB cap before the round-trip so the operator gets a friendly
+	 * error rather than a raw upstream 400/413.
+	 */
+	public function block_put( \WP_REST_Request $request ) {
+		$name = (string) $request['name'];
+		$err  = $this->validate_block_name( $name );
+		if ( null !== $err ) {
+			return $err;
+		}
+
+		$body    = $request->get_json_params();
+		$content = is_array( $body ) && isset( $body['content'] ) && is_string( $body['content'] ) ? $body['content'] : null;
+		if ( null === $content ) {
+			return $this->error_response( 400, 'validation_failed', array( 'message' => 'Block content is required.' ) );
+		}
+		if ( strlen( $content ) > BLOCK_MAX_BYTES ) {
+			return $this->error_response( 413, 'validation_failed', array( 'message' => 'Block content exceeds the 64 KB limit.' ) );
+		}
+
+		$ctx = $this->resolve_client_and_slug();
+		if ( isset( $ctx['error'] ) ) {
+			return $ctx['error'];
+		}
+
+		$path   = '/admin/chatbots/' . rawurlencode( $ctx['slug'] ) . '/blocks/' . rawurlencode( $name );
+		$result = $ctx['client']->put_raw( $path, $content, 'text/markdown' );
+		if ( ! $result['ok'] ) {
+			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
+		}
+
+		return rest_ensure_response(
+			array(
+				'ok'   => true,
+				'name' => $name,
+			)
+		);
+	}
+
+	/**
+	 * Delete a block. Upstream returns 204 (empty body); the JSON delete()
+	 * path handles that fine (data is null, ok is true).
+	 */
+	public function block_delete( \WP_REST_Request $request ) {
+		$name = (string) $request['name'];
+		$err  = $this->validate_block_name( $name );
+		if ( null !== $err ) {
+			return $err;
+		}
+
+		$ctx = $this->resolve_client_and_slug();
+		if ( isset( $ctx['error'] ) ) {
+			return $ctx['error'];
+		}
+
+		$path   = '/admin/chatbots/' . rawurlencode( $ctx['slug'] ) . '/blocks/' . rawurlencode( $name );
+		$result = $ctx['client']->delete( $path );
+		if ( ! $result['ok'] ) {
+			return $this->error_response( $result['status'], $result['error'], $result['detail'] );
+		}
+
+		return rest_ensure_response( array( 'ok' => true ) );
+	}
+
+	// ---------------------------------------------------------------------
 	// Sessions / messages — M22 review surface
 	// ---------------------------------------------------------------------
 
@@ -453,18 +608,62 @@ class Admin_REST {
 	// ---------------------------------------------------------------------
 
 	/**
-	 * Forward to /admin/chatbots/{slug}{suffix} using the stored slug.
+	 * Resolve the API client + stored chatbot slug, or an error response if
+	 * either is missing. Returns either `[ 'error' => WP_REST_Response ]` or
+	 * `[ 'client' => Admin_API_Client, 'slug' => string ]`.
+	 *
+	 * @return array<string,mixed>
 	 */
-	private function proxy_to_chatbot( string $method, ?array $body = null, string $suffix = '', array $query = array() ) {
+	private function resolve_client_and_slug(): array {
 		$client = get_admin_api_client();
 		if ( ! $client ) {
-			return $this->error_response( 412, 'not_configured', array( 'message' => 'Admin key not set. Configure it in the Connection tab.' ) );
+			return array( 'error' => $this->error_response( 412, 'not_configured', array( 'message' => 'Admin key not set. Configure it in the Connection tab.' ) ) );
 		}
 
 		$slug = (string) get_option( OPT_CHATBOT_SLUG, '' );
 		if ( '' === $slug ) {
-			return $this->error_response( 412, 'not_configured', array( 'message' => 'No chatbot selected. Configure it in the Connection tab.' ) );
+			return array( 'error' => $this->error_response( 412, 'not_configured', array( 'message' => 'No chatbot selected. Configure it in the Connection tab.' ) ) );
 		}
+
+		return array(
+			'client' => $client,
+			'slug'   => $slug,
+		);
+	}
+
+	/**
+	 * Validate a block name against the upstream pattern + reserved list.
+	 * Returns null when valid, or a ready-to-return error response.
+	 *
+	 * @return \WP_REST_Response|null
+	 */
+	private function validate_block_name( string $name ) {
+		if ( ! preg_match( BLOCK_NAME_REGEX, $name ) ) {
+			return $this->error_response( 400, 'validation_failed', array( 'message' => 'Block name may only contain letters, numbers, hyphens and underscores.' ) );
+		}
+		if ( in_array( $name, RESERVED_BLOCK_NAMES, true ) ) {
+			return $this->error_response(
+				400,
+				'validation_failed',
+				array(
+					/* translators: %s: reserved block name like PERSONA */
+					'message' => sprintf( '"%s" is a reserved name and can\'t be edited here.', $name ),
+				)
+			);
+		}
+		return null;
+	}
+
+	/**
+	 * Forward to /admin/chatbots/{slug}{suffix} using the stored slug.
+	 */
+	private function proxy_to_chatbot( string $method, ?array $body = null, string $suffix = '', array $query = array() ) {
+		$ctx = $this->resolve_client_and_slug();
+		if ( isset( $ctx['error'] ) ) {
+			return $ctx['error'];
+		}
+		$client = $ctx['client'];
+		$slug   = $ctx['slug'];
 
 		$path = '/admin/chatbots/' . rawurlencode( $slug ) . $suffix;
 

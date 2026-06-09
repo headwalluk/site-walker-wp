@@ -178,6 +178,50 @@
   margin-left: 6px;
 }
 
+/* Context (blocks) tab ----------------------------------------------- */
+
+.site-walker-wp-settings .swwp-blocks-intro {
+  max-width: 48em;
+  margin-bottom: 16px;
+}
+
+.site-walker-wp-settings .swwp-blocks-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.site-walker-wp-settings .swwp-blocks-table {
+  max-width: 600px;
+  margin-bottom: 12px;
+}
+
+.site-walker-wp-settings .swwp-block-link {
+  font-family: Menlo, Consolas, Monaco, monospace;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.site-walker-wp-settings .swwp-blocks-table td {
+  vertical-align: middle;
+}
+
+/* Byte counter under the content textarea; turns red past the 64KB cap. */
+.site-walker-wp-settings .swwp-block-bytes {
+  margin-right: 6px;
+  font-family: Menlo, Consolas, Monaco, monospace;
+}
+
+.site-walker-wp-settings .swwp-block-bytes.swwp-over-limit {
+  color: #b32d2e;
+  font-weight: 600;
+}
+
+.site-walker-wp-settings .swwp-block-name-hint {
+  font-style: italic;
+}
+
 /* Sessions tab ------------------------------------------------------- */
 
 .site-walker-wp-settings .swwp-sessions-controls {
@@ -214,6 +258,12 @@
 
 .site-walker-wp-settings .swwp-sessions-pageinfo {
   color: #50575e;
+}
+
+/* Country flag glyph — a touch larger so the little flags read clearly. */
+.site-walker-wp-settings .swwp-country {
+  font-size: 1.2em;
+  line-height: 1;
 }
 
 .site-walker-wp-settings .swwp-muted {
@@ -280,7 +330,6 @@
   gap: 10px;
 
   max-width: 48em;
-  background-color: pink;
   padding: 20px;
   background-color: #f6f7f7;
   border: 1px solid #dcdcde;

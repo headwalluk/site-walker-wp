@@ -50,6 +50,7 @@ $has_slug = '' !== (string) get_option( OPT_CHATBOT_SLUG, '' );
 					<th><?php esc_html_e( 'Messages', 'site-walker' ); ?></th>
 					<th><?php esc_html_e( 'Tokens', 'site-walker' ); ?></th>
 					<th><?php esc_html_e( 'Cost', 'site-walker' ); ?></th>
+					<th><?php esc_html_e( 'Country', 'site-walker' ); ?></th>
 					<th><?php esc_html_e( 'Visitor', 'site-walker' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'site-walker' ); ?></th>
 				</tr>

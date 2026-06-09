@@ -77,6 +77,16 @@ const ADMIN_REST_ROOT        = 'admin';
 // Account admin key shape — matches the upstream sw_ + 43 base64url chars.
 const ADMIN_KEY_REGEX        = '/^sw_[A-Za-z0-9_-]{43}$/';
 
+// Context (system) blocks. Name pattern + reserved names mirror the upstream
+// `/admin/chatbots/{slug}/blocks` surface so the operator gets a friendly
+// error before the round-trip rather than a raw upstream 400.
+const BLOCK_NAME_REGEX       = '/^[A-Za-z0-9_-]+$/';
+const BLOCK_MAX_BYTES        = 65536; // 64 KB — upstream rejects larger with 413.
+// Names the upstream PUT refuses: PERSONA lives in the chatbots.persona DB
+// column (set on the Chatbot tab); HANDOFF_FINAL is a hardcoded built-in.
+// HANDOFF_SOFT / HANDOFF_HARD are deliberately writable and NOT reserved.
+const RESERVED_BLOCK_NAMES   = array( 'PERSONA', 'HANDOFF_FINAL' );
+
 // GitHub-Releases auto-updater. Used by Github_Updater to poll for new
 // versions; release artifacts come from the `release.yml` workflow that
 // builds a `site-walker-wp.zip` (stable name) + a `site-walker-wp-<ver>.zip`

@@ -8,6 +8,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 _(nothing yet)_
 
+## [1.2.0] - 2026-06-09
+
+Adds a **Context** tab for managing the chatbot's system context blocks from wp-admin, plus a visitor-country column on the Sessions tab.
+
+### Added (Context blocks editor — M12)
+- New **Context** tab in the settings page for managing the chatbot's system context blocks — the markdown snippets the upstream API stitches into the assistant's system prompt — without shelling into the host. Surfaces the upstream filesystem-backed block API (`GET/PUT/DELETE /admin/chatbots/{slug}/blocks[/{name}]`): list blocks with their byte size and last-modified time, create / edit / delete in a markdown editor, with a live byte counter against the 64 KB cap. Labelled "Context" rather than "system blocks" to keep the internal terminology out of the merchant-facing UI.
+- `Admin_API_Client` gained a raw-body request path (`get_raw()` / `put_raw()`): block content is `text/markdown` in both directions, not JSON, so the single-block fetch/save can't ride the existing JSON helpers. List and delete still use the JSON path.
+- Reserved/special names are signposted: `PERSONA` (set on the Chatbot tab) and `HANDOFF_FINAL` are rejected with a friendly message client- and server-side before the round-trip; `HANDOFF_SOFT` / `HANDOFF_HARD` are editable as the operator-customisable handoff messages.
+- Safety guards on the editor: creating a block whose name collides with an existing one prompts before overwriting (the upstream PUT is write-or-overwrite), and navigating away from unsaved edits (back link, tab switch, or leaving the page) prompts before discarding them.
+
+### Added (Sessions tab)
+- **Country column** on the Sessions list (and detail view), showing the visitor's resolved country as a Unicode flag with the ISO code on hover. Reads the new nullable `country_code` from the upstream sessions response (resolved from the originating IP at session-mint; the IP itself is never stored). Falls back to a muted dash when unresolved, and to the two-letter code on platforms without flag glyphs (e.g. Windows).
+
+### Changed
+- Refactored `Admin_REST`'s per-tab proxy to share a `resolve_client_and_slug()` helper (the "admin key / chatbot not configured" guard the block routes also need), rather than repeating the checks inline.
+
+### Fixed
+- Removed a stray `background-color: pink` debug declaration from the Sessions-tab message styling.
+
 ## [1.1.1] - 2026-05-25
 
 Single-line patch: the shared "Save changes" button on the tabbed settings page is now actually hidden on tabs where it doesn't apply.

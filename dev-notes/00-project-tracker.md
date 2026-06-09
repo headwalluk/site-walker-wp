@@ -1,8 +1,8 @@
 # Project Tracker
 
-**Version:** 1.1.1
-**Last Updated:** 2026-05-25
-**Current Phase:** 1.1.1 shipped (admin settings-page submit-button-on-wrong-tab fix) — next: remaining polish queue + M4 integrations
+**Version:** 1.2.0
+**Last Updated:** 2026-06-09
+**Current Phase:** 1.2.0 — M12 (Context blocks editor) built, pending in-browser verification; then remaining polish queue + M4 integrations
 **Overall Progress:** 100% of "v1 shippable"
 
 ---
@@ -22,7 +22,7 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 
 ### Next session (queued)
 - [ ] **Admin-area tidy.** Multiple "Save settings" buttons across the tabs are disorientating — only one Save per page would be cleaner. User wants to review the current behaviour in operation for a day or so before deciding what to change, so this is queued (not done now).
-- [ ] **Plan a chatbot-content editor admin tab.** A way for the site owner to edit their chatbot's markdown files (the upstream "system context blocks" — but **don't use that terminology in the UI**; pick a merchant-friendly name during planning). Planning only in the next session; implementation later. Background design for the upstream surface is in [`20-system-blocks-api.md`](20-system-blocks-api.md). When this plan lands, drop the existing "System context blocks" line from the Deferred admin-area features section below — it's superseded by this one.
+- [x] **Plan a chatbot-content editor admin tab.** Planned as **[M12 — Context blocks editor](#m12--context-blocks-editor-admin-tab--planned--build-as-a-sprint)** below. UI label settled as "Context" (no "system blocks" terminology surfaced); builds to the shipped flat disk-block API rather than the richer unbuilt catalogue in [`20-system-blocks-api.md`](20-system-blocks-api.md). Ready to build as a sprint.
 
 ### Done (shipped in 1.1.0)
 - [x] **M11 — Formatter extension + consolidation.** Chat-text rendering tidy-up: headings, bullet lists, ordered lists, italic, and markdown-syntax `[label](url)` links now render as HTML in the chat bubble instead of leaking through as plain text. Assistant-message formatter consolidated into a single shared module (`assets/shared/formatter.js`, exposed as `window.SiteWalkerFormatter`) consumed by both `widget.js` and `admin.js`. Folded in the 60-doc URL/markdown collision fix (trailing `*` / `_` no longer captured into the href). Loose-list grouping fix landed in the same release (blank line between items doesn't end the list any more). Retired the widget.js NUL-byte sentinel gotcha — file is plain ASCII now (`~~SWWPLINK<n>~~` placeholder scheme).
@@ -56,7 +56,6 @@ Settings are managed via a tabbed WP admin page (Connection / Widget / Appearanc
 - [ ] **Origins management in wp-admin.** Now that the plugin auto-scopes to one chatbot, an "add/remove origins" affordance on the Connection tab is natural for multi-site setups. Lower priority since auto-scope handles the common case (one site, one origin).
 - [ ] **Provider API key setting in wp-admin** — `PATCH /admin/chatbots/{slug}/api-key`. Credential-handling escalation; wants its own design pass.
 - [ ] **Model swap in wp-admin** — `model_slug` PATCH. Risky knob for a non-technical merchant; wrong model breaks replies.
-- [ ] **System context blocks: admin CRUD + sync** — see [`20-system-blocks-api.md`](20-system-blocks-api.md).
 
 ### Strategic future work (post-1.0.0)
 - [ ] **M4 — Integrations framework + WooCommerce + Independent Analytics.** The product pivot from "generic chatbot" to "WP/Woo-aware assistant" — the v2 differentiator. See [`10-integrations-architecture.md`](10-integrations-architecture.md), [`11-integration-woocommerce.md`](11-integration-woocommerce.md), [`12-integration-independent-analytics.md`](12-integration-independent-analytics.md).
@@ -221,6 +220,38 @@ Pre-implementation regex testing was done with a node harness (`/tmp/sw-formatte
 - Configurable heading-level mapping (collapse-to-h3 is fine as a baked-in choice).
 
 Estimated effort: 2-3 hours — mostly the refactor + the verification matrix; the regex additions themselves are small.
+
+### M12 — Context blocks editor (admin tab) ✅ (built — pending in-browser verification)
+A new **Context** tab in wp-admin that lets the site owner add / edit / delete the chatbot's system context blocks — the markdown files the upstream API stitches into the LLM's system prompt — without shelling into the host. Surfaces the upstream filesystem-backed block API (`GET/PUT/DELETE /admin/chatbots/{slug}/blocks[/{name}]`, documented in the API project's `docs/api-admin.md`).
+
+**Reality check on the design notes.** The earlier proposal in [`20-system-blocks-api.md`](20-system-blocks-api.md) describes a much richer DB-backed catalogue (`priority`, `enabled` toggles, `tags`, `source` badges, a `/preview` endpoint, integration sync) that **was never built upstream**. What actually shipped is a flat, filesystem-backed surface: each block is a named markdown file with content and a byte size — nothing else. This milestone builds to what exists; `20-system-blocks-api.md` is superseded and should be marked as such (the richer catalogue, if ever wanted, is a separate upstream project).
+
+**The flat API surface:**
+- `GET /admin/chatbots/{slug}/blocks` → `{blocks:[{name,size}]}`.
+- `GET /admin/chatbots/{slug}/blocks/{name}` → raw `text/markdown` body (not JSON).
+- `PUT /admin/chatbots/{slug}/blocks/{name}` → write/overwrite; body content-type must be `text/markdown` / `text/plain`; 64 KB cap (413 over).
+- `DELETE /admin/chatbots/{slug}/blocks/{name}` → 204.
+- Name pattern `^[A-Za-z0-9_-]+$`. Reserved (PUT 400s): `PERSONA` (lives on the Chatbot tab) and `HANDOFF_FINAL`. `HANDOFF_SOFT` / `HANDOFF_HARD` **are** writable — the operator-customisable handoff messages.
+
+**UX (settled with the user):** label the tab **Context** (don't surface "system blocks" terminology in the UI). Flat list with hints — all blocks in one master-detail list; the "new block" name field carries a hint naming the special/reserved names rather than a separate dedicated handoff section.
+
+**Architecture:** mirrors the other REST-driven tabs. New proxy routes in `Admin_REST` under `/wp-json/site-walker/v1/admin/chatbot/blocks[/{name}]`, manage_options + nonce gated, via the existing `Admin_API_Client` and stored slug. The one genuine wrinkle: blocks are `text/markdown`, not JSON, in both directions — the existing client always JSON-encodes the body, sends `Accept: application/json`, and JSON-decodes the response, so the single-block get/put needs a raw-body / raw-response path. List + delete stay on the existing JSON helpers. No transient caching — fetch-on-activate, consistent with Chatbot / Geo / Usage / Sessions.
+
+**Plugin work:**
+- [x] **`Admin_API_Client` raw path** — `get_raw()` / `put_raw()` (+ private `request_raw()`): send a string body with a caller-supplied `Content-Type`, return the response body unparsed on success; the failure path still decodes the JSON `{error,detail}` envelope.
+- [x] **REST routes** — four proxies in `Admin_REST`: list (`GET …/blocks`, JSON passthrough), get-one (`GET …/blocks/{name}`, wraps raw markdown into `{name,content}`), put (`PUT …/blocks/{name}`, takes `{content}` JSON → `text/markdown` body, enforces the 64 KB cap), delete. Name pattern + reserved-name rejection shared via `validate_block_name()`; client/slug guard extracted to `resolve_client_and_slug()` (now also used by `proxy_to_chatbot()`). Name regex + `RESERVED_BLOCK_NAMES` + `BLOCK_MAX_BYTES` live in `constants.php`.
+- [x] **Context tab partial** — `admin-templates/tabs/blocks.php`. Not-configured / loading scaffold; master-detail list (name + KB size, clickable) → editor with name + markdown textarea, Save / Delete, live byte counter, and the special-names hint under the name field.
+- [x] **`initBlocksTab()` in `admin.js`** — fetch list on `swwp:tab-activate`; in-place master-detail (not hash-routed, to avoid a `#blocks/new` collision) load / save / delete; UTF-8 byte counter; client-side mirror of name + size validation. Wired into the `$(function(){…})` init block.
+- [x] **Nav + registration** — `'blocks' => __('Context', …)` in `$tabs` and `'blocks' => 'blocks.php'` in `$rest_tabs` (`settings-page.php`), placed right after Chatbot.
+- [x] **CSS** — list / editor layout + byte-counter over-limit state in `admin.css`, matching the file's existing style.
+- [x] **Docs** — `20-system-blocks-api.md` marked superseded; CHANGELOG entry under `[Unreleased]`.
+
+**Verification:**
+- [ ] Create, edit, and delete a free-form block; confirm the change is live on the next chat turn (upstream re-reads per request — no restart).
+- [ ] Edit a `HANDOFF_SOFT` block and confirm the customised handoff copy appears in a forced soft-handoff (`SW_SIM_SOFT_HANDOFF_AFTER_USER_TURNS`).
+- [ ] Confirm reserved names (`PERSONA`, `HANDOFF_FINAL`) and over-64 KB / bad-name inputs surface friendly errors rather than raw codes. _(in-browser pass)_
+
+**Out of scope (won't do here):** priority / ordering, enable-disable toggles, tags, assembled-prompt preview, integration-generated blocks + sync — all part of the unbuilt `20-system-blocks-api.md` catalogue, not the shipped flat API.
 
 ---
 

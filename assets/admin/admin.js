@@ -744,6 +744,312 @@
 		panel.addEventListener('swwp:tab-activate', load);
 	}
 
+	// ---------------------------------------------------------------------
+	// Context (blocks) tab
+	// ---------------------------------------------------------------------
+	// Master-detail in one panel: a list of the chatbot's context blocks and
+	// an editor, toggled in-place (not hash-routed — blocks don't need deep
+	// links, and a block named "new" would collide with a #blocks/new route).
+	// List + delete ride the JSON proxy; get-one + save use the raw
+	// text/markdown path on the server side.
+	function initBlocksTab() {
+		const panel = document.querySelector('#blocks-panel');
+		if (!panel) return;
+
+		const notConfigured = panel.querySelector('.swwp-not-configured');
+		const loadingEl     = panel.querySelector('.swwp-tab-loading');
+		const listEl        = panel.querySelector('.swwp-blocks-list');
+		const editorEl      = panel.querySelector('.swwp-block-editor');
+		const rowsEl        = panel.querySelector('.swwp-blocks-rows');
+		const emptyEl       = panel.querySelector('.swwp-blocks-empty');
+		const listStatus    = listEl.querySelector('.swwp-status');
+		const editorStatus  = editorEl.querySelector('.swwp-status');
+		const newBtn        = panel.querySelector('.swwp-block-new');
+		const reloadBtn     = panel.querySelector('.swwp-blocks-reload');
+		const backLink      = panel.querySelector('.swwp-back-to-list');
+		const nameInput     = panel.querySelector('#swwp-block-name');
+		const contentInput  = panel.querySelector('#swwp-block-content');
+		const bytesEl       = panel.querySelector('.swwp-block-bytes');
+		const saveBtn       = panel.querySelector('.swwp-block-save');
+		const deleteBtn     = panel.querySelector('.swwp-block-delete');
+
+		// Mirror the upstream rules client-side so the operator gets immediate
+		// feedback rather than a round-trip just to be told the name is wrong.
+		const NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+		const RESERVED = new Set(['PERSONA', 'HANDOFF_FINAL']);
+		const MAX_BYTES = 65536;
+
+		// Names of blocks currently on the server, refreshed on each list load.
+		// Used to warn before a new-block save silently overwrites an existing
+		// one (the upstream PUT is write-or-overwrite).
+		const knownNames = new Set();
+
+		// Unsaved-changes tracking for the editor. Set on edit, cleared on
+		// load / new / successful save. Guards navigation away from the editor.
+		let dirty = false;
+		function markDirty() {
+			dirty = true;
+		}
+		// Dirty only matters while the editor is the visible view.
+		function editorIsDirty() {
+			return dirty && !editorEl.hidden;
+		}
+		function confirmDiscardIfDirty() {
+			if (!editorIsDirty()) return true;
+			if (window.confirm('You have unsaved changes to this block. Leave without saving?')) {
+				dirty = false; // they chose to discard — don't re-prompt on the way out
+				return true;
+			}
+			return false;
+		}
+
+		const encoder = new TextEncoder();
+		// UTF-8 byte length — the 64KB cap is on bytes, not characters.
+		function byteLength(s) {
+			return encoder.encode(s).length;
+		}
+
+		function formatBytes(n) {
+			if (typeof n !== 'number') return '—';
+			if (n < 1024) return n + ' B';
+			return (n / 1024).toFixed(1) + ' KB';
+		}
+
+		// modified_at is an ISO 8601 string from the upstream list response;
+		// render it in the admin's locale. Blank-safe for older API instances
+		// that don't return the field yet.
+		function formatModified(v) {
+			if (v === null || v === undefined || v === '') return '—';
+			const d = new Date(v);
+			return isNaN(d.getTime()) ? '—' : d.toLocaleString();
+		}
+
+		function setListStatus(text, kind) {
+			listStatus.textContent = text || '';
+			listStatus.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		function setEditorStatus(text, kind) {
+			editorStatus.textContent = text || '';
+			editorStatus.className = 'swwp-status' + (kind ? ' is-' + kind : '');
+		}
+
+		function updateByteCount() {
+			const n = byteLength(contentInput.value);
+			bytesEl.textContent = n.toLocaleString() + ' / 65,536 bytes.';
+			bytesEl.classList.toggle('swwp-over-limit', n > MAX_BYTES);
+		}
+
+		function showEditor() {
+			listEl.hidden = true;
+			editorEl.hidden = false;
+		}
+
+		// Open the editor for a brand-new block: name editable, no delete.
+		function openNew() {
+			nameInput.value = '';
+			nameInput.readOnly = false;
+			contentInput.value = '';
+			deleteBtn.hidden = true;
+			setEditorStatus('');
+			updateByteCount();
+			dirty = false;
+			showEditor();
+			nameInput.focus();
+		}
+
+		// Open the editor for an existing block: name locked, delete available,
+		// content fetched on demand.
+		async function openExisting(name) {
+			nameInput.value = name;
+			nameInput.readOnly = true;
+			contentInput.value = '';
+			deleteBtn.hidden = false;
+			showEditor();
+			setEditorStatus('Loading…');
+			const result = await apiCall('GET', '/chatbot/blocks/' + encodeURIComponent(name));
+			if (!result.ok) {
+				setEditorStatus(errorMessage(result), 'error');
+				return;
+			}
+			contentInput.value = (result.data && result.data.content) || '';
+			setEditorStatus('');
+			updateByteCount();
+			dirty = false;
+		}
+
+		function renderRows(blocks) {
+			rowsEl.innerHTML = '';
+			if (!blocks.length) {
+				emptyEl.hidden = false;
+				return;
+			}
+			emptyEl.hidden = true;
+			blocks.forEach((b) => {
+				const name = String(b.name || '');
+				const size = typeof b.size_bytes === 'number' ? b.size_bytes : 0;
+
+				const tr = document.createElement('tr');
+
+				const nameTd = document.createElement('td');
+				const link = document.createElement('a');
+				link.href = '#blocks';
+				link.className = 'swwp-block-link';
+				link.textContent = name;
+				link.addEventListener('click', (e) => {
+					e.preventDefault();
+					openExisting(name);
+				});
+				nameTd.appendChild(link);
+				tr.appendChild(nameTd);
+
+				const sizeTd = document.createElement('td');
+				sizeTd.textContent = formatBytes(size);
+				tr.appendChild(sizeTd);
+
+				const modTd = document.createElement('td');
+				modTd.textContent = formatModified(b.modified_at);
+				tr.appendChild(modTd);
+
+				rowsEl.appendChild(tr);
+			});
+		}
+
+		async function loadList() {
+			notConfigured.hidden = true;
+			editorEl.hidden = true;
+			listEl.hidden = true;
+			loadingEl.hidden = false;
+			setListStatus('');
+
+			const result = await apiCall('GET', '/chatbot/blocks');
+			loadingEl.hidden = true;
+
+			if (!result.ok) {
+				if (result.error === 'not_configured') {
+					notConfigured.hidden = false;
+					return;
+				}
+				setListStatus(errorMessage(result), 'error');
+				listEl.hidden = false;
+				return;
+			}
+
+			const blocks = toArray(result.data && result.data.blocks);
+			blocks.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+			knownNames.clear();
+			blocks.forEach((b) => knownNames.add(String(b.name || '')));
+			renderRows(blocks);
+			listEl.hidden = false;
+		}
+
+		async function save() {
+			const name = (nameInput.value || '').trim();
+			if (!name) {
+				setEditorStatus('Enter a name for the block.', 'error');
+				return;
+			}
+			if (!NAME_PATTERN.test(name)) {
+				setEditorStatus('Name may only contain letters, numbers, hyphens and underscores.', 'error');
+				return;
+			}
+			if (RESERVED.has(name)) {
+				setEditorStatus('"' + name + '" is a reserved name and can\'t be edited here.', 'error');
+				return;
+			}
+			const content = contentInput.value;
+			if (byteLength(content) > MAX_BYTES) {
+				setEditorStatus('Content exceeds the 64 KB limit.', 'error');
+				return;
+			}
+
+			// Creating (name still editable) but the name collides with an
+			// existing block? The upstream PUT would overwrite it silently —
+			// confirm first. Editing an existing block (name locked) skips this.
+			if (!nameInput.readOnly && knownNames.has(name)) {
+				if (!window.confirm('A block named "' + name + '" already exists. Overwrite it?')) {
+					return;
+				}
+			}
+
+			saveBtn.disabled = true;
+			setEditorStatus('Saving…');
+			const result = await apiCall('PUT', '/chatbot/blocks/' + encodeURIComponent(name), { content });
+			saveBtn.disabled = false;
+
+			if (!result.ok) {
+				setEditorStatus(errorMessage(result), 'error');
+				return;
+			}
+			// A freshly-created block is now an existing one: lock the name,
+			// reveal delete, and remember it so a follow-up edit behaves like
+			// any other and a re-create of the same name warns.
+			nameInput.readOnly = true;
+			deleteBtn.hidden = false;
+			knownNames.add(name);
+			dirty = false;
+			setEditorStatus('Saved.', 'success');
+		}
+
+		async function remove() {
+			const name = (nameInput.value || '').trim();
+			if (!name) return;
+			if (!window.confirm('Delete the "' + name + '" block? This can\'t be undone.')) return;
+
+			deleteBtn.disabled = true;
+			setEditorStatus('Deleting…');
+			const result = await apiCall('DELETE', '/chatbot/blocks/' + encodeURIComponent(name));
+			deleteBtn.disabled = false;
+
+			if (!result.ok) {
+				setEditorStatus(errorMessage(result), 'error');
+				return;
+			}
+			loadList();
+		}
+
+		newBtn.addEventListener('click', openNew);
+		reloadBtn.addEventListener('click', () => loadList());
+		backLink.addEventListener('click', (e) => {
+			e.preventDefault();
+			if (!confirmDiscardIfDirty()) return;
+			loadList();
+		});
+		saveBtn.addEventListener('click', save);
+		deleteBtn.addEventListener('click', remove);
+		contentInput.addEventListener('input', () => {
+			updateByteCount();
+			markDirty();
+		});
+		// Name is only editable while creating; typing a new name counts as a
+		// change worth guarding too.
+		nameInput.addEventListener('input', markDirty);
+
+		// Guard tab switches away from a dirty editor. The nav-tab click handler
+		// in initTabs runs in the bubble phase; a capture-phase listener here
+		// can cancel it (stopImmediatePropagation halts all later listeners) so
+		// the switch is blocked when the operator declines to discard.
+		document.querySelectorAll('.site-walker-wp-settings .nav-tab').forEach((tab) => {
+			tab.addEventListener('click', (e) => {
+				if (confirmDiscardIfDirty()) return;
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			}, true);
+		});
+
+		// Full-page navigation (reload, close, leaving wp-admin) — the browser
+		// shows its own generic "leave site?" prompt when returnValue is set.
+		window.addEventListener('beforeunload', (e) => {
+			if (!editorIsDirty()) return;
+			e.preventDefault();
+			e.returnValue = '';
+		});
+
+		// Re-fetch the list on every tab activation (consistent with the other
+		// API-backed tabs; always lands on the list view, not a stale editor).
+		panel.addEventListener('swwp:tab-activate', () => loadList());
+	}
+
 	// Message-content formatter shims. Both delegate to the shared module
 	// in assets/shared/formatter.js so the Sessions tab renders messages
 	// the same way the front-end widget does (markdown headings, lists,
@@ -811,6 +1117,27 @@
 			return '$' + (n < 1 ? n.toFixed(4) : n.toFixed(2));
 		}
 
+		// Convert an ISO 3166-1 alpha-2 code to its Unicode regional-indicator
+		// flag (e.g. "GB" → 🇬🇧). Returns '' for anything that isn't two ASCII
+		// letters. Note: Windows ships no flag glyphs in its emoji font, so
+		// these fall back to rendering the two letters there — acceptable.
+		function countryFlag(cc) {
+			if (typeof cc !== 'string' || !/^[A-Za-z]{2}$/.test(cc)) return '';
+			const base = 0x1f1e6; // regional indicator symbol 'A'
+			const up = cc.toUpperCase();
+			return String.fromCodePoint(base + up.charCodeAt(0) - 65, base + up.charCodeAt(1) - 65);
+		}
+
+		// Table-cell HTML for a country: the flag glyph, with the code as a
+		// title/aria-label so it's legible on hover and to screen readers.
+		// Falls back to a muted dash when there's no resolvable code.
+		function countryCell(cc) {
+			const flag = countryFlag(cc);
+			if (!flag) return '<span class="swwp-muted">—</span>';
+			const code = escapeMessageHtml(cc.toUpperCase());
+			return `<span class="swwp-country" title="${code}" aria-label="${code}">${flag}</span>`;
+		}
+
 		function badgeHtml(text, kind) {
 			return `<span class="swwp-badge swwp-badge-${kind}">${escapeMessageHtml(text)}</span>`;
 		}
@@ -834,6 +1161,7 @@
 					<td>${s.message_count || 0}</td>
 					<td>${tokens.toLocaleString()}</td>
 					<td>${escapeMessageHtml(formatCost(s.cost_usd_estimate))}</td>
+					<td>${countryCell(s.country_code)}</td>
 					<td>${email}</td>
 					<td>${badges.join(' ') || '<span class="swwp-muted">—</span>'}</td>
 				</tr>
@@ -915,6 +1243,11 @@
 				? `<a href="mailto:${escapeMessageHtml(s.visitor_email)}">${escapeMessageHtml(s.visitor_email)}</a>`
 				: '—';
 
+			const flag = countryFlag(s.country_code);
+			const country = flag
+				? `${flag} ${escapeMessageHtml(String(s.country_code).toUpperCase())}`
+				: '—';
+
 			summaryEl.innerHTML = `
 				<h2>Session #${escapeMessageHtml(String(s.id || ''))} ${badges.join(' ')}</h2>
 				<dl class="swwp-session-meta">
@@ -924,6 +1257,7 @@
 					<dt>Messages</dt><dd>${s.message_count || 0}</dd>
 					<dt>Tokens</dt><dd>${tokens.toLocaleString()} (${(s.tokens_in || 0).toLocaleString()} in / ${(s.tokens_out || 0).toLocaleString()} out)</dd>
 					<dt>Cost estimate</dt><dd>${escapeMessageHtml(formatCost(s.cost_usd_estimate))}</dd>
+					<dt>Country</dt><dd>${country}</dd>
 					<dt>Visitor email</dt><dd>${email}</dd>
 				</dl>
 			`;
@@ -969,6 +1303,7 @@
 		initTabs();
 		initConnectionTab();
 		initChatbotTab();
+		initBlocksTab();
 		initGeoTab();
 		initUsageTab();
 		initSessionsTab();

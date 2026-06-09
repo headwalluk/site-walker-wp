@@ -21,6 +21,7 @@ $tabs = array(
 	'widget'     => __( 'Widget', 'site-walker' ),
 	'appearance' => __( 'Appearance', 'site-walker' ),
 	'chatbot'    => __( 'Chatbot', 'site-walker' ),
+	'blocks'     => __( 'Context', 'site-walker' ),
 	'geo'        => __( 'Geo', 'site-walker' ),
 	'usage'      => __( 'Usage', 'site-walker' ),
 	'sessions'   => __( 'Sessions', 'site-walker' ),
@@ -66,6 +67,7 @@ printf( '</form>' );
 $rest_tabs = array(
 	'connection' => 'connection.php',
 	'chatbot'    => 'chatbot.php',
+	'blocks'     => 'blocks.php',
 	'geo'        => 'geo.php',
 	'usage'      => 'usage.php',
 	'sessions'   => 'sessions.php',

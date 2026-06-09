@@ -54,6 +54,24 @@ class Admin_API_Client {
 	}
 
 	/**
+	 * Fetch a path whose success body is NOT JSON (e.g. a context block's
+	 * `text/markdown` content). Returns the raw body string in `data` on
+	 * success; error responses are still JSON, so the failure path decodes
+	 * the `{error, detail?}` envelope just like request().
+	 */
+	public function get_raw( string $path ): array {
+		return $this->request_raw( 'GET', $path, null, null );
+	}
+
+	/**
+	 * Write a raw body with a caller-supplied content type (the upstream
+	 * block PUT requires `text/markdown` or `text/plain`, not JSON).
+	 */
+	public function put_raw( string $path, string $body, string $content_type ): array {
+		return $this->request_raw( 'PUT', $path, $body, $content_type );
+	}
+
+	/**
 	 * One HTTP round-trip against the upstream admin surface.
 	 *
 	 * Returns a uniform envelope so callers don't have to special-case the
@@ -122,6 +140,75 @@ class Admin_API_Client {
 			? $decoded['error']
 			: 'unknown_error';
 		$detail = is_array( $decoded ) && isset( $decoded['detail'] ) && is_array( $decoded['detail'] )
+			? $decoded['detail']
+			: null;
+
+		return array(
+			'ok'     => false,
+			'status' => $status,
+			'error'  => $error,
+			'detail' => $detail,
+		);
+	}
+
+	/**
+	 * Like request(), but the success body is returned verbatim as a string
+	 * rather than JSON-decoded — for the block content endpoints, which speak
+	 * `text/markdown`. The Accept header advertises the text types plus JSON,
+	 * since the upstream still emits a JSON `{error, detail?}` envelope on the
+	 * failure path (which we decode exactly as request() does).
+	 *
+	 * @param string      $method       GET / PUT.
+	 * @param string      $path         API path beginning with /.
+	 * @param string|null $body         Raw request body for write methods.
+	 * @param string|null $content_type Content-Type for the body, if any.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function request_raw( string $method, string $path, ?string $body = null, ?string $content_type = null ): array {
+		$args = array(
+			'method'  => $method,
+			'timeout' => 10,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $this->bearer,
+				'Accept'        => 'text/markdown, text/plain, application/json',
+				'User-Agent'    => 'Site-Walker-WP/' . \STWLK_PLUGIN_VERSION . '; ' . home_url(),
+			),
+		);
+
+		if ( null !== $body ) {
+			$args['headers']['Content-Type'] = $content_type ?? 'text/plain';
+			$args['body']                    = $body;
+		}
+
+		$response = wp_remote_request( $this->base_url . $path, $args );
+
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'ok'     => false,
+				'status' => 0,
+				'error'  => 'transport_error',
+				'detail' => array( 'message' => $response->get_error_message() ),
+			);
+		}
+
+		$status   = (int) wp_remote_retrieve_response_code( $response );
+		$raw_body = (string) wp_remote_retrieve_body( $response );
+
+		if ( $status >= 200 && $status < 300 ) {
+			return array(
+				'ok'     => true,
+				'status' => $status,
+				'data'   => $raw_body,
+			);
+		}
+
+		// Non-2xx — the body is the JSON error envelope, same as request().
+		$decoded = '' === $raw_body ? null : json_decode( $raw_body, true );
+		$error   = is_array( $decoded ) && isset( $decoded['error'] ) && is_string( $decoded['error'] )
+			? $decoded['error']
+			: 'unknown_error';
+		$detail  = is_array( $decoded ) && isset( $decoded['detail'] ) && is_array( $decoded['detail'] )
 			? $decoded['detail']
 			: null;
 

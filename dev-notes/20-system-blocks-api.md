@@ -1,9 +1,23 @@
 # System Context Blocks — API & Sync (Planning)
 
-**Status:** Proposal — for review
+**Status:** ⚠️ SUPERSEDED — historical design, not what shipped.
 **Last Updated:** 2026-05-19
 **Author:** Paul (drafted by assistant)
 **Depends on:** [`10-integrations-architecture.md`](10-integrations-architecture.md). New routes on the **upstream** API side need to be designed and built before the plugin side can ship.
+
+---
+
+> **Superseded by M12 (Context blocks editor).** This note proposed a rich
+> DB-backed block *catalogue* — `priority`, `enabled` toggles, `tags`,
+> `source` badges, a `/preview` endpoint, and integration sync. **None of
+> that was built upstream.** What actually shipped is a flat,
+> filesystem-backed surface (`GET/PUT/DELETE /admin/chatbots/{slug}/blocks[/{name}]`):
+> each block is just a named markdown file with content and a byte size. The
+> WP plugin's **Context** tab (M12 in
+> [`00-project-tracker.md`](00-project-tracker.md)) builds against that flat
+> API. Keep this doc for the catalogue ideas (ordering, enable/disable,
+> integration-generated blocks) if that richer model is ever revisited as a
+> separate upstream project — but it does **not** describe the current code.
 
 ---
 

@@ -4,7 +4,7 @@ Tags: chat, chatbot, ai, llm, widget
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,10 @@ No. The widget calls the configured API URL directly from the visitor's browser.
 In the visitor's `localStorage`, keyed per API host so multiple widgets on the same browser don't collide. The token is opaque and tied to the website's origin allowlist on the API side.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added: Context tab in the settings page for managing the chatbot's context blocks — the markdown snippets the assistant gets as background knowledge with every conversation. List, create, edit and delete blocks in a markdown editor, with a live size counter against the 64 KB-per-block limit, an overwrite prompt on name collisions, and an unsaved-changes warning. Requires a Site Walker API instance that exposes the `/admin/chatbots/{slug}/blocks` surface.
+* Added: Country column on the Sessions tab — the visitor's country shown as a flag (with the ISO code on hover), resolved from the originating IP at session start. The IP itself is never stored.
 
 = 1.1.1 =
 * Fixed: shared "Save changes" button on the tabbed settings page is now hidden on the REST-driven tabs (Connection / Chatbot / Geo / Usage / Sessions). It only applies to Widget and Appearance — the toggle was in place but silently no-op'd because the hook class was being clipped from the rendered button by WP's `submit_button()` emitting a duplicate `class` attribute. Moved the class into the `$type` argument so WP merges it into the single primary class attribute it builds itself; also hides the wrapping `<p class="submit">` so the REST tabs don't render an empty padding band where the button would have been.
@@ -94,6 +98,9 @@ In the visitor's `localStorage`, keyed per API host so multiple widgets on the s
 * Initial scaffold: settings page, front-end widget, three-state load flow (cached session → cached probe → fresh probe), session mint and chat turn handling.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds a Context tab for editing the chatbot's context blocks from wp-admin, and a visitor-country column on the Sessions tab. No DB changes; no setting changes; transparent upgrade. The Context tab needs an admin key configured on the Connection tab and a Site Walker API instance that exposes the blocks surface.
 
 = 1.1.1 =
 Hides the shared "Save changes" button on tabs where it doesn't apply (Connection / Chatbot / Geo / Usage / Sessions). No DB changes; no setting changes; transparent upgrade.
